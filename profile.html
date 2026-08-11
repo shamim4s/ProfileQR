@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Profile </title>
+    <title>Contact Profile</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
-    <div class="loading">Loading profile...</div>
+    <div class="loading">Loading profile....</div>
 </div>
 
 <script>
@@ -36,25 +36,11 @@ function escapeVCard(value) {
         .replace(/,/g, "\\,");
 }
 
+function normalizeWebsite(value){const v=String(value||"").trim();return !v?"":(/^https?:\/\//i.test(v)?v:"https://"+v);}
+
 function createVCard(profile) {
-    return [
-        "BEGIN:VCARD",
-        "VERSION:3.0",
-        `FN:${escapeVCard(profile.name)}`,
-        profile.jobTitle ? `TITLE:${escapeVCard(profile.jobTitle)}` : "",
-        profile.phone ? `TEL;TYPE=VOICE:${escapeVCard(profile.phone)}` : "",
-        profile.mobile ? `TEL;TYPE=CELL:${escapeVCard(profile.mobile)}` : "",
-        profile.email ? `EMAIL:${escapeVCard(profile.email)}` : "",
-        profile.address1 || profile.address2
-            ? `ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;`
-            : "",
-        profile.website ? `URL:${escapeVCard(profile.website)}` : "",
-        profile.profileUrl ? `X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}` : "",
-        profile.about ? `NOTE:${escapeVCard(profile.about)}` : "",
-        profile.extra1 ? `X-EXTRA-01:${escapeVCard(profile.extra1)}` : "",
-        profile.extra2 ? `X-EXTRA-02:${escapeVCard(profile.extra2)}` : "",
-        "END:VCARD"
-    ].filter(Boolean).join("\r\n");
+    const photo=profile.photo ? `PHOTO;ENCODING=b;TYPE=JPEG:${String(profile.photo).split(",")[1]}` : "";
+    return ["BEGIN:VCARD","VERSION:3.0",`FN:${escapeVCard(profile.name)}`,profile.jobTitle?`TITLE:${escapeVCard(profile.jobTitle)}`:"",profile.phone?`TEL;TYPE=VOICE:${escapeVCard(profile.phone)}`:"",profile.mobile?`TEL;TYPE=CELL:${escapeVCard(profile.mobile)}`:"",profile.email?`EMAIL:${escapeVCard(profile.email)}`:"",profile.address1||profile.address2?`ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;`:"",profile.website?`URL:${escapeVCard(normalizeWebsite(profile.website))}`:"",profile.profileUrl?`X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}`:"",profile.about?`NOTE:${escapeVCard(profile.about)}`:"",profile.extra1?`X-EXTRA-01:${escapeVCard(profile.extra1)}`:"",profile.extra2?`X-EXTRA-02:${escapeVCard(profile.extra2)}`:"",photo,"END:VCARD"].filter(Boolean).join("\r\n");
 }
 
 function saveContact(profile) {
@@ -107,7 +93,7 @@ function renderProfile(profile) {
         : "";
 
     const websiteLink = profile.website
-        ? `<div class="contact-row"><span>🌐</span><a href="${escapeHTML(profile.website)}" target="_blank" rel="noopener">Website</a></div>`
+        ? `<div class="contact-row"><span>🌐</span><a href="${escapeHTML(normalizeWebsite(profile.website))}" target="_blank" rel="noopener">Website</a></div>`
         : "";
 
     const address = profile.address1 || profile.address2
@@ -165,7 +151,7 @@ function renderProfile(profile) {
 
                     ${
                         profile.website
-                            ? `<a class="btn dark" href="${escapeHTML(profile.website)}" target="_blank" rel="noopener">🌐 Website</a>`
+                            ? `<a class="btn dark" href="${escapeHTML(normalizeWebsite(profile.website))}" target="_blank" rel="noopener">🌐 Website</a>`
                             : ""
                     }
                 </div>

@@ -11,14 +11,14 @@
     <div class="page-header">
         <div>
             <span class="eyebrow">ProfileQR</span>
-            <h1>Contact QR Generator</h1>
+            <h1>Contact QR Generator </h1>
             <p class="muted">Create an offline contact QR or publish a complete online profile package to GitHub Pages.</p>
         </div>
     </div>
 
     <div class="mode-switch card">
         <button class="mode-btn active" data-mode="online">🌐 Online QR</button>
-        <button class="mode-btn" data-mode="offline">📦 Offline QR </button>
+        <button class="mode-btn" data-mode="offline">📦 Offline QR</button>
     </div>
 
     <div id="onlineNotice" class="notice">
@@ -30,37 +30,6 @@
     <div id="offlineNotice" class="notice hidden">
         <strong>Offline QR:</strong> the QR contains the vCard itself, so the contact can still be saved without the profile website.
     </div>
-
-    <div id="githubSettings" class="card settings-card">
-        <h2>GitHub publishing</h2>
-        <p class="muted small">
-            Your token is used only in this browser session and is never written into the generated files.
-            Use a fine-grained GitHub token with <strong>Contents: Read and write</strong> access to this repository.
-        </p>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="githubOwner">GitHub owner</label>
-                <input id="githubOwner" value="shamim4s" autocomplete="off">
-            </div>
-
-            <div class="form-group">
-                <label for="githubRepo">Repository</label>
-                <input id="githubRepo" value="ProfileQR" autocomplete="off">
-            </div>
-
-            <div class="form-group">
-                <label for="githubBranch">Branch</label>
-                <input id="githubBranch" value="main" autocomplete="off">
-            </div>
-
-            <div class="form-group">
-                <label for="githubToken">GitHub token</label>
-                <input id="githubToken" type="password" placeholder="github_pat_..." autocomplete="off">
-            </div>
-        </div>
-    </div>
-
     <div class="generator-grid">
         <div class="card">
             <h2>Contact Information</h2>
@@ -108,7 +77,7 @@
 
             <div class="form-group">
                 <label for="website">Website</label>
-                <input id="website" placeholder="https://example.com">
+                <input id="website" placeholder="www.example.com"><div class="field-help">https:// is added automatically.</div>
             </div>
 
             <div class="form-group">
@@ -185,7 +154,6 @@ function setMode(mode) {
         btn.classList.toggle("active", btn.dataset.mode === mode);
     });
 
-    $("githubSettings").classList.toggle("hidden", mode !== "online");
     $("onlineNotice").classList.toggle("hidden", mode !== "online");
     $("offlineNotice").classList.toggle("hidden", mode !== "offline");
     $("generate").textContent =
@@ -216,24 +184,8 @@ function escapeVCard(value) {
 }
 
 function createVCard(profile) {
-    return [
-        "BEGIN:VCARD",
-        "VERSION:3.0",
-        `FN:${escapeVCard(profile.name)}`,
-        profile.jobTitle ? `TITLE:${escapeVCard(profile.jobTitle)}` : "",
-        profile.phone ? `TEL;TYPE=VOICE:${escapeVCard(profile.phone)}` : "",
-        profile.mobile ? `TEL;TYPE=CELL:${escapeVCard(profile.mobile)}` : "",
-        profile.email ? `EMAIL:${escapeVCard(profile.email)}` : "",
-        profile.address1 || profile.address2
-            ? `ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;`
-            : "",
-        profile.website ? `URL:${escapeVCard(profile.website)}` : "",
-        profile.profileUrl ? `X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}` : "",
-        profile.about ? `NOTE:${escapeVCard(profile.about)}` : "",
-        profile.extra1 ? `X-EXTRA-01:${escapeVCard(profile.extra1)}` : "",
-        profile.extra2 ? `X-EXTRA-02:${escapeVCard(profile.extra2)}` : "",
-        "END:VCARD"
-    ].filter(Boolean).join("\r\n");
+    const photo = profile.photo ? `PHOTO;ENCODING=b;TYPE=JPEG:${profile.photo.split(",")[1]}` : "";
+    return ["BEGIN:VCARD","VERSION:3.0",`FN:${escapeVCard(profile.name)}`,profile.jobTitle?`TITLE:${escapeVCard(profile.jobTitle)}`:"",profile.phone?`TEL;TYPE=VOICE:${escapeVCard(profile.phone)}`:"",profile.mobile?`TEL;TYPE=CELL:${escapeVCard(profile.mobile)}`:"",profile.email?`EMAIL:${escapeVCard(profile.email)}`:"",profile.address1||profile.address2?`ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;`:"",profile.website?`URL:${escapeVCard(profile.website)}`:"",profile.profileUrl?`X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}`:"",profile.about?`NOTE:${escapeVCard(profile.about)}`:"",profile.extra1?`X-EXTRA-01:${escapeVCard(profile.extra1)}`:"",profile.extra2?`X-EXTRA-02:${escapeVCard(profile.extra2)}`:"",photo,"END:VCARD"].filter(Boolean).join("\r\n");
 }
 
 function readPhoto(file) {
@@ -301,9 +253,11 @@ function generateQR(payload) {
     container.appendChild(img);
 }
 
-function getProfileUrl(slug) {
-    return new URL("profile.html?id=" + encodeURIComponent(slug), window.location.href).href;
-}
+function normalizeWebsite(value) { const v=String(value||"").trim(); return !v ? "" : (/^https?:\/\//i.test(v) ? v : "https://"+v); }
+function safeValue(id) { const el=$(id); return el && typeof el.value === "string" ? el.value.trim() : ""; }
+const GITHUB_OWNER="shamim4s", GITHUB_REPO="ProfileQR", GITHUB_BRANCH="master", GITHUB_TOKEN_KEY="profileqr_github_token_v1";
+function getGithubToken(){ let t=localStorage.getItem(GITHUB_TOKEN_KEY); if(t) return t; t=prompt("Enter your GitHub fine-grained token once. It will be stored in this browser."); if(!t||!t.trim()) throw new Error("GitHub token is required for Online QR."); localStorage.setItem(GITHUB_TOKEN_KEY,t.trim()); return t.trim(); }
+function getProfileUrl(slug) { return "https://shamim4s.github.io/ProfileQR/profile.html?id=" + encodeURIComponent(slug); }
 
 function base64Utf8(text) {
     const bytes = new TextEncoder().encode(text);
@@ -331,146 +285,21 @@ async function qrDataUrlToBase64(dataUrl) {
     return blobToBase64(await response.blob());
 }
 
-async function githubRequest(owner, repo, token, path, options = {}) {
-    const url =
-        "https://api.github.com/repos/" +
-        encodeURIComponent(owner) +
-        "/" +
-        encodeURIComponent(repo) +
-        "/contents/" +
-        path.split("/").map(encodeURIComponent).join("/");
-
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            "Accept": "application/vnd.github+json",
-            "Authorization": "Bearer " + token,
-            "X-GitHub-Api-Version": "2022-11-28",
-            ...(options.headers || {})
-        }
-    });
-
-    const text = await response.text();
-    let data = null;
-
-    try {
-        data = text ? JSON.parse(text) : null;
-    } catch {
-        data = { message: text };
-    }
-
-    if (!response.ok) {
-        throw new Error(data?.message || `GitHub API error (${response.status})`);
-    }
-
-    return data;
+async function githubRequest(path, options = {}) {
+    const token=getGithubToken();
+    const url="https://api.github.com/repos/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/contents/"+path.split("/").map(encodeURIComponent).join("/");
+    const response=await fetch(url,{...options,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28",...(options.headers||{})}});
+    const text=await response.text(); let data={}; try{data=text?JSON.parse(text):{}}catch{data={message:text};}
+    if(!response.ok){let m=data.message||(`GitHub API error (${response.status})`); if(response.status===401)m="Saved GitHub token is invalid or expired. Clear it and try again."; if(response.status===403)m="GitHub rejected the request. Check Contents: Read and write permission."; throw new Error(m);} return data;
 }
-
-async function getExistingSha(owner, repo, token, path) {
-    try {
-        const data = await githubRequest(owner, repo, token, path);
-        return data.sha;
-    } catch (error) {
-        if (/not found/i.test(error.message) || /404/.test(error.message)) return null;
-        throw error;
-    }
-}
-
-async function uploadGitHubFile(owner, repo, branch, token, path, contentBase64, message) {
-    const sha = await getExistingSha(owner, repo, token, path);
-
-    const body = {
-        message,
-        content: contentBase64,
-        branch
-    };
-
-    if (sha) body.sha = sha;
-
-    return githubRequest(owner, repo, token, path, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-}
-
-async function publishPackage(profile, vcard, profileUrl, qrDataUrl) {
-    const owner = $("githubOwner").value.trim();
-    const repo = $("githubRepo").value.trim();
-    const branch = $("githubBranch").value.trim() || "main";
-    const token = $("githubToken").value.trim();
-
-    if (!owner || !repo || !token) {
-        throw new Error("Enter the GitHub owner, repository and token first.");
-    }
-
-    const folder = "profiles/" + profile.id;
-    const jsonText = JSON.stringify(profile, null, 2);
-    const qrBase64 = await qrDataUrlToBase64(qrDataUrl);
-
-    const files = [
-        {
-            path: `${folder}/profile.json`,
-            content: base64Utf8(jsonText)
-        },
-        {
-            path: `${folder}/contact.vcf`,
-            content: base64Utf8(vcard)
-        },
-        {
-            path: `${folder}/qr.png`,
-            content: qrBase64
-        },
-        {
-            path: `${folder}/profile-url.txt`,
-            content: base64Utf8(profileUrl)
-        }
-    ];
-
-    for (const file of files) {
-        await uploadGitHubFile(
-            owner,
-            repo,
-            branch,
-            token,
-            file.path,
-            file.content,
-            `Create/update online profile: ${profile.id}`
-        );
-    }
-
-    return {
-        owner,
-        repo,
-        branch,
-        folder,
-        files: files.map(file => file.path)
-    };
-}
+async function getExistingSha(path){try{return (await githubRequest(path)).sha;}catch(e){if(/not found|404/i.test(e.message))return null;throw e;}}
+async function uploadGitHubFile(path, contentBase64, message){const sha=await getExistingSha(path); const body={message,content:contentBase64,branch:GITHUB_BRANCH}; if(sha)body.sha=sha; return githubRequest(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});}
+async function publishPackage(profile,vcard,profileUrl,qrDataUrl){getGithubToken();const folder="profiles/"+profile.id, qrBase64=await qrDataUrlToBase64(qrDataUrl), files=[{path:`${folder}/profile.json`,content:base64Utf8(JSON.stringify(profile,null,2))},{path:`${folder}/contact.vcf`,content:base64Utf8(vcard)},{path:`${folder}/qr.png`,content:qrBase64},{path:`${folder}/profile-url.txt`,content:base64Utf8(profileUrl)}]; for(const f of files)await uploadGitHubFile(f.path,f.content,`Create/update online profile: ${profile.id}`); return {owner:GITHUB_OWNER,repo:GITHUB_REPO,branch:GITHUB_BRANCH,folder,files:files.map(f=>f.path)};}
 
 function buildProfile() {
-    const name = $("name").value.trim();
-    const slug = normalizeSlug($("slug").value);
-
-    if (!name) throw new Error("Please enter a name.");
-    if (!slug) throw new Error("Please enter a profile ID.");
-
-    return {
-        id: slug,
-        name,
-        jobTitle: $("jobTitle").value.trim(),
-        phone: $("phone").value.trim(),
-        mobile: $("mobile").value.trim(),
-        email: $("email").value.trim(),
-        address1: $("address1").value.trim(),
-        address2: $("address2").value.trim(),
-        website: $("website").value.trim(),
-        profileUrl: currentMode === "online" ? getProfileUrl(slug) : $("profileUrl").value.trim(),
-        about: $("about").value.trim(),
-        extra1: $("extra1").value.trim(),
-        extra2: $("extra2").value.trim(),
-        photo: ""
-    };
+    const name=safeValue("name"), slug=normalizeSlug(safeValue("slug"));
+    if(!name) throw new Error("Please enter a name."); if(!slug) throw new Error("Please enter a profile ID.");
+    return {id:slug,name,jobTitle:safeValue("jobTitle"),phone:safeValue("phone"),mobile:safeValue("mobile"),email:safeValue("email"),address1:safeValue("address1"),address2:safeValue("address2"),website:normalizeWebsite(safeValue("website")),profileUrl:currentMode==="online"?getProfileUrl(slug):"",about:safeValue("about"),extra1:safeValue("extra1"),extra2:safeValue("extra2"),photo:""};
 }
 
 async function generate() {
@@ -592,6 +421,7 @@ $("copyURL").addEventListener("click", async () => {
 });
 
 setMode("online");
+window.ProfileQR={clearGithubToken(){localStorage.removeItem(GITHUB_TOKEN_KEY);alert("Saved GitHub token cleared.");}};
 </script>
 </body>
 </html>

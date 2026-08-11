@@ -50,3 +50,7 @@ If your repository or Pages URL is different, change the GitHub owner/repository
 - profile.html
 - style.css
 - qrcode.min.js
+
+
+## Token
+The GitHub settings section is removed. On the first Online QR publish, the browser asks for the token once and stores it locally. To clear it, open the browser console and run `ProfileQR.clearGithubToken()`. A client-side token cannot be truly secret on a public static page; use a server-side API if other people will publish profiles.
