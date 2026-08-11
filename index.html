@@ -3,44 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal QR Card</title>
+    <title>ProfileQR</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
 <div class="container">
     <div class="hero">
-        <h1>Personal QR Card</h1>
-
-        <p>
-            Offline-first digital contact card.
-        </p>
-
+        <span class="eyebrow">ProfileQR</span>
+        <h1>One QR. One beautiful profile.</h1>
+        <p>Create an offline contact QR or publish an online digital business card to GitHub Pages.</p>
         <div class="actions">
-            <a class="btn primary" href="admin.html">
-                Create QR Card
-            </a>
+            <a class="btn primary" href="admin.html">Create QR</a>
         </div>
     </div>
 
     <div class="info-card">
-        <h2>How it works</h2>
-
+        <h2>How Online QR works</h2>
         <ol>
-            <li>Enter your contact information.</li>
-            <li>Generate your vCard QR code.</li>
-            <li>Download the QR code.</li>
-            <li>Upload the profile JSON to GitHub.</li>
-            <li>Print the QR on your card.</li>
+            <li>Choose <strong>Online QR</strong> in the generator.</li>
+            <li>Enter the profile details and your GitHub repository credentials.</li>
+            <li>The generator creates the public profile URL automatically.</li>
+            <li>Four files are published inside <code>profiles/&lt;id&gt;/</code>.</li>
+            <li>The QR contains the profile URL, so scanning opens the profile page.</li>
+            <li>The profile page lets visitors call, email, visit the website, or save the contact.</li>
         </ol>
 
-        <p>
-            The QR contains the contact information itself,
-            so basic contact saving does not depend on your website.
-        </p>
+        <h3>Generated package</h3>
+        <pre class="package-tree">profiles/john/
+├── profile.json
+├── contact.vcf
+├── qr.png
+└── profile-url.txt</pre>
     </div>
 </div>
-
 </body>
 </html>

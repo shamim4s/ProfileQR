@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Contact Profile</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<div id="app">
+
+    <div class="loading">
+        Loading profile...
+    </div>
+
+</div>
+
+
+<script>
+
+const app =
+    document.getElementById("app");
+
+
+// -----------------------------------------------------
+// Get profile ID
+// -----------------------------------------------------
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const id =
+    params.get("id");
+
+
+// -----------------------------------------------------
+// Escape HTML
+// -----------------------------------------------------
+
+function escapeHTML(value) {
+
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+// -----------------------------------------------------
+// vCard generator
+// -----------------------------------------------------
+
+function escapeVCard(value) {
+
+    if (!value) return "";
+
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/\n/g, "\\n")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,");
+}
+
+
+function createVCard(profile) {
+
+    const lines = [
+
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+
+        `FN:${escapeVCard(profile.name)}`,
+
+        profile.jobTitle
+            ? `TITLE:${escapeVCard(profile.jobTitle)}`
+            : "",
+
+        profile.phone
+            ? `TEL;TYPE=VOICE:${escapeVCard(profile.phone)}`
+            : "",
+
+        profile.mobile
+            ? `TEL;TYPE=CELL:${escapeVCard(profile.mobile)}`
+            : "",
+
+        profile.email
+            ? `EMAIL:${escapeVCard(profile.email)}`
+            : "",
+
+        profile.address1 || profile.address2
+            ? `ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;`
+            : "",
+
+        profile.website
+            ? `URL:${escapeVCard(profile.website)}`
+            : "",
+
+        profile.profileUrl
+            ? `X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}`
+            : "",
+
+        profile.about
+            ? `NOTE:${escapeVCard(profile.about)}`
+            : "",
+
+        profile.extra1
+            ? `NOTE:${escapeVCard(profile.extra1)}`
+            : "",
+
+        profile.extra2
+            ? `NOTE:${escapeVCard(profile.extra2)}`
+            : "",
+
+        "END:VCARD"
+    ];
+
+    return lines
+        .filter(Boolean)
+        .join("\r\n");
+}
+
+
+// -----------------------------------------------------
+// Download contact
+// -----------------------------------------------------
+
+function saveContact(profile) {
+
+    const vcard =
+        createVCard(profile);
+
+    const blob =
+        new Blob(
+            [vcard],
+            {
+                type:
+                    "text/vcard;charset=utf-8"
+            }
+        );
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+        profile.id +
+        "-contact.vcf";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    setTimeout(() => {
+
+        URL.revokeObjectURL(url);
+
+    }, 1000);
+}
+
+
+// -----------------------------------------------------
+// Load profile
+// -----------------------------------------------------
+
+async function loadProfile() {
+
+    if (!id) {
+
+        throw new Error(
+            "No profile ID was supplied."
+        );
+    }
+
+    const response =
+        await fetch(
+            "profiles/" +
+            encodeURIComponent(id) +
+            ".json"
+        );
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Profile not found."
+        );
+    }
+
+    return response.json();
+}
+
+
+// -----------------------------------------------------
+// Render
+// -----------------------------------------------------
+
+async function renderProfile() {
+
+    try {
+
+        const profile =
+            await loadProfile();
+
+        document.title =
+            profile.name;
+
+        const phoneLink =
+            profile.phone
+                ? `<div class="contact-row">
+                     📞
+                     <a href="tel:${escapeHTML(profile.phone)}">
+                       ${escapeHTML(profile.phone)}
+                     </a>
+                   </div>`
+                : "";
+
+        const mobileLink =
+            profile.mobile
+                ? `<div class="contact-row">
+                     📱
+                     <a href="tel:${escapeHTML(profile.mobile)}">
+                       ${escapeHTML(profile.mobile)}
+                     </a>
+                   </div>`
+                : "";
+
+        const emailLink =
+            profile.email
+                ? `<div class="contact-row">
+                     ✉️
+                     <a href="mailto:${escapeHTML(profile.email)}">
+                       ${escapeHTML(profile.email)}
+                     </a>
+                   </div>`
+                : "";
+
+        const websiteLink =
+            profile.website
+                ? `<div class="contact-row">
+                     🌐
+                     <a
+                       href="${escapeHTML(profile.website)}"
+                       target="_blank"
+                       rel="noopener"
+                     >
+                       Website
+                     </a>
+                   </div>`
+                : "";
+
+        const address =
+            profile.address1 ||
+            profile.address2
+                ? `
+                    <div class="profile-section">
+                        <h3>Address</h3>
+
+                        <div>
+                            ${escapeHTML(profile.address1)}
+                        </div>
+
+                        <div>
+                            ${escapeHTML(profile.address2)}
+                        </div>
+                    </div>
+                  `
+                : "";
+
+        const about =
+            profile.about
+                ? `
+                    <div class="profile-section">
+                        <h3>About</h3>
+
+                        <p>
+                            ${escapeHTML(profile.about)}
+                        </p>
+                    </div>
+                  `
+                : "";
+
+        const extras =
+            profile.extra1 ||
+            profile.extra2
+                ? `
+                    <div class="profile-section">
+
+                        <h3>More Information</h3>
+
+                        <div>
+                            ${escapeHTML(profile.extra1)}
+                        </div>
+
+                        <div>
+                            ${escapeHTML(profile.extra2)}
+                        </div>
+
+                    </div>
+                  `
+                : "";
+
+        app.innerHTML = `
+
+            <div class="profile-page">
+
+                <main class="profile">
+
+                    ${
+                        profile.photo
+                            ? `
+                                <img
+                                    src="${profile.photo}"
+                                    alt="${escapeHTML(profile.name)}"
+                                >
+                              `
+                            : ""
+                    }
+
+                    <h1>
+                        ${escapeHTML(profile.name)}
+                    </h1>
+
+                    <div class="title">
+                        ${escapeHTML(profile.jobTitle)}
+                    </div>
+
+                    <div class="profile-actions">
+
+                        <button
+                            id="saveContact"
+                            class="btn success"
+                        >
+                            💾 Save Contact
+                        </button>
+
+                        ${
+                            profile.phone
+                                ? `
+                                    <a
+                                        class="btn primary"
+                                        href="tel:${escapeHTML(profile.phone)}"
+                                    >
+                                        📞 Call
+                                    </a>
+                                  `
+                                : ""
+                        }
+
+                        ${
+                            profile.mobile
+                                ? `
+                                    <a
+                                        class="btn primary"
+                                        href="tel:${escapeHTML(profile.mobile)}"
+                                    >
+                                        📱 Mobile
+                                    </a>
+                                  `
+                                : ""
+                        }
+
+                        ${
+                            profile.email
+                                ? `
+                                    <a
+                                        class="btn secondary"
+                                        href="mailto:${escapeHTML(profile.email)}"
+                                    >
+                                        ✉️ Email
+                                    </a>
+                                  `
+                                : ""
+                        }
+
+                        ${
+                            profile.website
+                                ? `
+                                    <a
+                                        class="btn dark"
+                                        href="${escapeHTML(profile.website)}"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >
+                                        🌐 Website
+                                    </a>
+                                  `
+                                : ""
+                        }
+
+                    </div>
+
+                    ${
+                        profile.about
+                            ? `
+                                <div class="about">
+                                    ${escapeHTML(profile.about)}
+                                </div>
+                              `
+                            : ""
+                    }
+
+                    <div class="profile-section">
+
+                        <h3>Contact</h3>
+
+                        ${phoneLink}
+                        ${mobileLink}
+                        ${emailLink}
+                        ${websiteLink}
+
+                    </div>
+
+                    ${address}
+
+                    ${extras}
+
+                </main>
+
+            </div>
+        `;
+
+
+        document
+            .getElementById("saveContact")
+            .addEventListener(
+                "click",
+                () => saveContact(profile)
+            );
+
+
+    } catch (error) {
+
+        app.innerHTML = `
+
+            <div class="error">
+
+                <h2>
+                    Profile unavailable
+                </h2>
+
+                <p>
+                    ${escapeHTML(error.message)}
+                </p>
+
+            </div>
+
+        `;
+    }
+}
+
+
+renderProfile();
+
+</script>
+
+</body>
+</html>
