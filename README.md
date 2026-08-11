@@ -5,7 +5,7 @@ This package adds two generator modes:
 - Online QR: publishes a complete profile package to GitHub using the GitHub Contents API.
 - Offline QR: keeps the existing vCard-in-QR behavior.
 
-## Online package created
+## Online package created 
 
 For profile ID `john`:
 
