@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProfileQR Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container generator">
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">ProfileQR</span>
+            <h1>Contact QR Generator</h1>
+            <p class="muted">Create an offline contact QR or publish a complete online profile package to GitHub Pages.</p>
+        </div>
+    </div>
+
+    <div class="mode-switch card">
+        <button class="mode-btn active" data-mode="online">🌐 Online QR</button>
+        <button class="mode-btn" data-mode="offline">📦 Offline QR</button>
+    </div>
+  <section class="card edit-card">
+    <div class="edit-head"><div><h2>Edit Existing Profile</h2><p class="small muted">Search by Profile ID/slug, phone number, or name.</p></div><button id="toggleEdit" class="btn secondary">Edit Existing</button></div>
+    <div id="editPanel" class="hidden">
+      <div class="form-grid">
+        <div class="form-group"><label>Search</label><input id="editSearch" placeholder="ID, slug, phone, or name"></div>
+        <div class="form-group"><label>Search by</label><select id="editType"><option value="any">Any</option><option value="id">Profile ID / Slug</option><option value="phone">Phone number</option><option value="name">Name</option></select></div>
+      </div>
+      <button id="findProfiles" class="btn primary">Find Profiles</button>
+      <div id="editResults" class="edit-results"></div>
+    </div>
+  </section>
+
+
+    <div id="onlineNotice" class="notice">
+        <strong>Online QR:</strong> the QR opens a public profile page. The generator uploads
+        <code>profile.json</code>, <code>contact.vcf</code>, <code>qr.png</code>, and
+        <code>profile-url.txt</code> into <code>profiles/&lt;profile-id&gt;/</code> in your GitHub repository.
+    </div>
+
+    <div id="offlineNotice" class="notice hidden">
+        <strong>Offline QR:</strong> the QR contains the vCard itself, so the contact can still be saved without the profile website.
+    </div>
+    <div class="generator-grid">
+        <div class="card">
+            <h2>Contact Information</h2>
+
+            <div class="form-group">
+                <label for="slug">Profile ID / Slug *</label>
+                <input id="slug" placeholder="john" autocomplete="off">
+                <div class="field-help">Lowercase letters, numbers, hyphens and underscores.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Name *</label>
+                <input id="name" placeholder="John Smith">
+            </div>
+
+            <div class="form-group">
+                <label for="jobTitle">Job / Designation</label>
+                <input id="jobTitle" placeholder="Business Consultant">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone</label>
+                <input id="phone" placeholder="+880...">
+            </div>
+
+            <div class="form-group">
+                <label for="mobile">Mobile</label>
+                <input id="mobile" placeholder="+880...">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" type="email" placeholder="name@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="address1">Address 01</label>
+                <input id="address1" placeholder="House / Street">
+            </div>
+
+            <div class="form-group">
+                <label for="address2">Address 02</label>
+                <input id="address2" placeholder="City / Country">
+            </div>
+
+            <div class="form-group">
+                <label for="website">Website</label>
+                <input id="website" placeholder="www.example.com"><div class="field-help">https:// is added automatically.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="about">About / Extra</label>
+                <textarea id="about" placeholder="Short description..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="extra1">Extra 01</label>
+                <input id="extra1">
+            </div>
+
+            <div class="form-group">
+                <label for="extra2">Extra 02</label>
+                <input id="extra2">
+            </div>
+
+            <div class="form-group">
+                <label for="photo">Profile Picture</label>
+                <input id="photo" type="file" accept="image/*">
+                <div class="field-help">The image is resized and stored inside profile.json as a data URL.</div>
+            </div>
+
+            <button class="btn primary full" id="generate">Generate Online QR & Publish</button>
+        </div>
+
+        <div class="card preview">
+            <h2>Preview</h2>
+
+            <img id="previewPhoto" class="profile-photo" src="" alt="Profile preview">
+
+            <h2 id="previewName">Your Name</h2>
+            <p id="previewJob" class="muted">Your designation</p>
+
+            <div id="profileUrlBox" class="url-box hidden">
+                <div class="small muted">Profile URL</div>
+                <a id="profileUrl" href="#" target="_blank" rel="noopener"></a>
+            </div>
+
+            <div id="qrcode" class="qr-box">
+                <span>QR will appear here</span>
+            </div>
+
+            <div class="button-grid">
+                <button id="downloadQR" class="btn primary">Download QR</button>
+                <button id="downloadVCF" class="btn success">Download vCard</button>
+                <button id="downloadJSON" class="btn dark">Download JSON</button>
+                <button id="copyURL" class="btn secondary">Copy Profile URL</button>
+            </div>
+
+            <div id="onlineResult" class="success-box hidden"></div>
+
+            <h3>Package</h3>
+            <div id="packagePreview" class="code-box">Generate a profile first.</div>
+        </div>
+    </div>
+</div>
+
+<script src="qrcode.min.js"></script>
+<script>
+"use strict";
+
+let currentProfile = null;
+let currentVCard = "";
+let currentProfileUrl = "";
+let currentMode = "online";
+
+const $ = id => document.getElementById(id);
+
+function setMode(mode) {
+    currentMode = mode;
+
+    document.querySelectorAll(".mode-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+
+    $("onlineNotice").classList.toggle("hidden", mode !== "online");
+    $("offlineNotice").classList.toggle("hidden", mode !== "offline");
+    $("generate").textContent =
+        mode === "online"
+            ? "Generate Online QR & Publish"
+            : "Generate Offline QR";
+}
+
+document.querySelectorAll(".mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => setMode(btn.dataset.mode));
+});
+
+function normalizeSlug(value) {
+    return value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+}
+
+$("slug").addEventListener("input", e => {
+    e.target.value = normalizeSlug(e.target.value);
+});
+
+function escapeVCard(value) {
+    if (!value) return "";
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/\n/g, "\\n")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,");
+}
+
+function createVCard(profile) {
+    const photo = profile.photo ? `PHOTO;ENCODING=b;TYPE=JPEG:${profile.photo.split(",")[1]}` : "";
+    return ["BEGIN:VCARD","VERSION:3.0",`FN:${escapeVCard(profile.name)}`,profile.jobTitle?`TITLE:${escapeVCard(profile.jobTitle)}`:"",profile.phone?`TEL;TYPE=VOICE:${escapeVCard(profile.phone)}`:"",profile.mobile?`TEL;TYPE=CELL:${escapeVCard(profile.mobile)}`:"",profile.email?`EMAIL:${escapeVCard(profile.email)}`:"",profile.address1||profile.address2?`ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;`:"",profile.website?`URL:${escapeVCard(profile.website)}`:"",profile.profileUrl?`X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}`:"",profile.about?`NOTE:${escapeVCard(profile.about)}`:"",profile.extra1?`X-EXTRA-01:${escapeVCard(profile.extra1)}`:"",profile.extra2?`X-EXTRA-02:${escapeVCard(profile.extra2)}`:"",photo,"END:VCARD"].filter(Boolean).join("\r\n");
+}
+
+function readPhoto(file) {
+    return new Promise((resolve, reject) => {
+        if (!file) return resolve("");
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const image = new Image();
+
+            image.onload = () => {
+                const maxSize = 600;
+                let width = image.width;
+                let height = image.height;
+
+                if (width > maxSize || height > maxSize) {
+                    const scale = Math.min(maxSize / width, maxSize / height);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(image, 0, 0, width, height);
+
+                resolve(canvas.toDataURL("image/jpeg", 0.82));
+            };
+
+            image.onerror = () => reject(new Error("Could not read the profile picture."));
+            image.src = reader.result;
+        };
+
+        reader.onerror = () => reject(new Error("Could not read the selected picture."));
+        reader.readAsDataURL(file);
+    });
+}
+
+function downloadFile(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function generateQR(payload) {
+    const container = $("qrcode");
+    container.innerHTML = "";
+
+    const qr = qrcode(0, "M");
+    qr.addData(payload);
+    qr.make();
+
+    const img = document.createElement("img");
+    img.src = qr.createDataURL(8, 0);
+    img.alt = "Profile QR Code";
+    container.appendChild(img);
+}
+
+function normalizeWebsite(value) { const v=String(value||"").trim(); return !v ? "" : (/^https?:\/\//i.test(v) ? v : "https://"+v); }
+function safeValue(id) { const el=$(id); return el && typeof el.value === "string" ? el.value.trim() : ""; }
+const GITHUB_OWNER="shamim4s", GITHUB_REPO="ProfileQR", GITHUB_BRANCH="master", GITHUB_TOKEN_KEY="profileqr_github_token_v1";
+function getGithubToken(){ let t=localStorage.getItem(GITHUB_TOKEN_KEY); if(t) return t; t=prompt("Enter your GitHub fine-grained token once. It will be stored in this browser."); if(!t||!t.trim()) throw new Error("GitHub token is required for Online QR."); localStorage.setItem(GITHUB_TOKEN_KEY,t.trim()); return t.trim(); }
+function getProfileUrl(slug) { return "https://shamim4s.github.io/ProfileQR/profile.html?id=" + encodeURIComponent(slug); }
+
+function base64Utf8(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = "";
+    const chunk = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+
+    return btoa(binary);
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function qrDataUrlToBase64(dataUrl) {
+    const response = await fetch(dataUrl);
+    return blobToBase64(await response.blob());
+}
+
+async function githubRequest(path, options = {}) {
+    const token=getGithubToken();
+    const url="https://api.github.com/repos/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/contents/"+path.split("/").map(encodeURIComponent).join("/");
+    const response=await fetch(url,{...options,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28",...(options.headers||{})}});
+    const text=await response.text(); let data={}; try{data=text?JSON.parse(text):{}}catch{data={message:text};}
+    if(!response.ok){let m=data.message||(`GitHub API error (${response.status})`); if(response.status===401)m="Saved GitHub token is invalid or expired. Clear it and try again."; if(response.status===403)m="GitHub rejected the request. Check Contents: Read and write permission."; throw new Error(m);} return data;
+}
+async function getExistingSha(path){try{return (await githubRequest(path)).sha;}catch(e){if(/not found|404/i.test(e.message))return null;throw e;}}
+async function uploadGitHubFile(path, contentBase64, message){const sha=await getExistingSha(path); const body={message,content:contentBase64,branch:GITHUB_BRANCH}; if(sha)body.sha=sha; return githubRequest(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});}
+async function publishPackage(profile,vcard,profileUrl,qrDataUrl){getGithubToken();const folder="profiles/"+profile.id, qrBase64=await qrDataUrlToBase64(qrDataUrl), files=[{path:`${folder}/profile.json`,content:base64Utf8(JSON.stringify(profile,null,2))},{path:`${folder}/contact.vcf`,content:base64Utf8(vcard)},{path:`${folder}/qr.png`,content:qrBase64},{path:`${folder}/profile-url.txt`,content:base64Utf8(profileUrl)}]; for(const f of files)await uploadGitHubFile(f.path,f.content,`Create/update online profile: ${profile.id}`); return {owner:GITHUB_OWNER,repo:GITHUB_REPO,branch:GITHUB_BRANCH,folder,files:files.map(f=>f.path)};}
+
+function buildProfile() {
+    const name=safeValue("name"), slug=normalizeSlug(safeValue("slug"));
+    if(!name) throw new Error("Please enter a name."); if(!slug) throw new Error("Please enter a profile ID.");
+    return {id:slug,name,jobTitle:safeValue("jobTitle"),phone:safeValue("phone"),mobile:safeValue("mobile"),email:safeValue("email"),address1:safeValue("address1"),address2:safeValue("address2"),website:normalizeWebsite(safeValue("website")),profileUrl:currentMode==="online"?getProfileUrl(slug):"",about:safeValue("about"),extra1:safeValue("extra1"),extra2:safeValue("extra2"),photo:""};
+}
+
+async function generate() {
+    const button = $("generate");
+    button.disabled = true;
+
+    try {
+        const profile = buildProfile();
+        profile.photo = await readPhoto($("photo").files[0]);
+
+        currentProfile = profile;
+        currentVCard = createVCard(profile);
+        currentProfileUrl = profile.profileUrl || "";
+
+        $("previewName").textContent = profile.name;
+        $("previewJob").textContent = profile.jobTitle || "";
+
+        if (profile.photo) {
+            $("previewPhoto").src = profile.photo;
+            $("previewPhoto").classList.remove("hidden");
+        } else {
+            $("previewPhoto").removeAttribute("src");
+            $("previewPhoto").classList.add("hidden");
+        }
+
+        const payload = currentMode === "online" ? currentProfileUrl : currentVCard;
+        generateQR(payload);
+
+        const qrDataUrl = $("qrcode").querySelector("img").src;
+
+        if (currentProfileUrl) {
+            $("profileUrl").textContent = currentProfileUrl;
+            $("profileUrl").href = currentProfileUrl;
+            $("profileUrlBox").classList.remove("hidden");
+        } else {
+            $("profileUrlBox").classList.add("hidden");
+        }
+
+        $("packagePreview").textContent =
+            currentMode === "online"
+                ? `profiles/${profile.id}/
+├── profile.json
+├── contact.vcf
+├── qr.png
+└── profile-url.txt`
+                : "Offline QR payload:\n\n" + currentVCard;
+
+        localStorage.setItem("profile-" + profile.id, JSON.stringify(profile));
+
+        if (currentMode === "online") {
+            $("onlineResult").className = "success-box";
+            $("onlineResult").textContent = "Publishing to GitHub...";
+
+            const result = await publishPackage(profile, currentVCard, currentProfileUrl, qrDataUrl);
+
+            $("onlineResult").innerHTML =
+                `Published successfully.<br>` +
+                `<a href="${currentProfileUrl}" target="_blank" rel="noopener">${currentProfileUrl}</a>`;
+
+            $("packagePreview").textContent =
+                result.files.join("\n") +
+                "\n\nProfile URL:\n" +
+                currentProfileUrl;
+        } else {
+            $("onlineResult").classList.add("hidden");
+        }
+
+        alert(
+            currentMode === "online"
+                ? "Online profile published successfully."
+                : "Offline QR generated successfully."
+        );
+    } catch (error) {
+        console.error(error);
+        alert(error.message || "Something went wrong.");
+        $("onlineResult").className = "error-box";
+        $("onlineResult").textContent = error.message || "Something went wrong.";
+    } finally {
+        button.disabled = false;
+    }
+}
+
+$("generate").addEventListener("click", generate);
+
+$("downloadQR").addEventListener("click", () => {
+    if (!currentProfile) return alert("Generate the profile first.");
+    const image = $("qrcode").querySelector("img");
+    if (!image) return;
+    const a = document.createElement("a");
+    a.href = image.src;
+    a.download = currentProfile.id + "-qr.png";
+    a.click();
+});
+
+$("downloadVCF").addEventListener("click", () => {
+    if (!currentProfile) return alert("Generate the profile first.");
+    downloadFile(currentProfile.id + ".vcf", currentVCard, "text/vcard;charset=utf-8");
+});
+
+$("downloadJSON").addEventListener("click", () => {
+    if (!currentProfile) return alert("Generate the profile first.");
+    downloadFile(
+        currentProfile.id + ".json",
+        JSON.stringify(currentProfile, null, 2),
+        "application/json"
+    );
+});
+
+$("copyURL").addEventListener("click", async () => {
+    if (!currentProfile) return alert("Generate the profile first.");
+    if (!currentProfileUrl) return alert("Generate an online profile first.");
+
+    try {
+        await navigator.clipboard.writeText(currentProfileUrl);
+        alert("Profile URL copied.");
+    } catch {
+        alert("Could not copy automatically. The URL is shown in the preview.");
+    }
+});
+
+
+$("newId").onclick=()=>{$("slug").value=randomProfileId();};
+if(!$("slug").value)$("slug").value=randomProfileId();
+function fillForm(p){
+ const fields={slug:p.id,name:p.name,jobTitle:p.jobTitle,company:p.company,phone:p.phone,mobile:p.mobile,email:p.email,address1:p.address1,address2:p.address2,website:p.website,about:p.about,extra1:p.extra1,linkedin:p.linkedin,wechat:p.wechat,facebook:p.facebook,instagram:p.instagram,xcom:p.xcom,tiktok:p.tiktok,youtube:p.youtube};
+ Object.entries(fields).forEach(([k,v])=>{if($(k))$(k).value=v||"";});
+ $("generate").textContent=mode==="online"?"Update Online QR & Publish":"Generate Offline QR";
+ status("Profile loaded. Edit the fields, then click Generate/Update.","working");
+}
+function renderEditResults(items){
+ const box=$("editResults");
+ if(!items.length){box.innerHTML='<div class="edit-empty">No matching profiles found.</div>';return;}
+ box.innerHTML=items.map((p,i)=>`<button class="edit-result" data-i="${i}"><strong>${e(p.name||"(No name)")}</strong><span>${e(p.id||"")} ${p.phone?"• "+e(p.phone):""}</span></button>`).join("");
+ box.querySelectorAll(".edit-result").forEach(b=>b.onclick=()=>fillForm(items[+b.dataset.i]));
+}
+async function findProfiles(){
+ const q=safeValue("editSearch").toLowerCase(); if(!q){status("Enter a profile ID, slug, phone number, or name.","error");return;}
+ try{
+  const token=getGithubToken();
+  const r=await fetch("https://api.github.com/repos/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/git/trees/"+GITHUB_BRANCH+"?recursive=1",{headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}});
+  if(!r.ok)throw new Error("Could not read the GitHub profile list.");
+  const tree=await r.json(), paths=(tree.tree||[]).map(x=>x.path).filter(p=>/^profiles\\/[^/]+\\/profile\\.json$/i.test(p));
+  const all=[];
+  for(const path of paths){try{const x=await fetch("https://raw.githubusercontent.com/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/"+path,{cache:"no-store"});if(x.ok)all.push(await x.json());}catch{}}
+  const type=$("editType").value;
+  renderEditResults(all.filter(p=>{
+   const id=String(p.id||"").toLowerCase(), phone=(String(p.phone||"")+" "+String(p.mobile||"")).toLowerCase(), name=String(p.name||"").toLowerCase();
+   return type==="id"?id.includes(q):type==="phone"?phone.includes(q):type==="name"?name.includes(q):(id.includes(q)||phone.includes(q)||name.includes(q));
+  }));
+ }catch(err){status("Edit search failed: "+err.message,"error");}
+}
+$("toggleEdit").onclick=()=>$("editPanel").classList.toggle("hidden");
+$("findProfiles").onclick=findProfiles;
+$("editSearch").addEventListener("keydown",ev=>{if(ev.key==="Enter")findProfiles();});
+
+setMode("online");
+window.ProfileQR={clearGithubToken(){localStorage.removeItem(GITHUB_TOKEN_KEY);alert("Saved GitHub token cleared.");}};
+</script>
+</body>
+</html>
