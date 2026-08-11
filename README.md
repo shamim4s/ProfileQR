@@ -54,3 +54,11 @@ If your repository or Pages URL is different, change the GitHub owner/repository
 
 ## Token
 The GitHub settings section is removed. On the first Online QR publish, the browser asks for the token once and stores it locally. To clear it, open the browser console and run `ProfileQR.clearGithubToken()`. A client-side token cannot be truly secret on a public static page; use a server-side API if other people will publish profiles.
+
+
+## New features
+- Automatic 6-character Profile ID with manual override.
+- Edit Existing Profile search by ID/slug, phone number, or name.
+- Company, About, Additional Information.
+- LinkedIn, WeChat, Facebook, Instagram, X, TikTok and YouTube social fields with profile icons.
+- Online edits update the existing `profiles/<id>/` files on the `master` branch.

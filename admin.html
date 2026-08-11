@@ -11,7 +11,7 @@
     <div class="page-header">
         <div>
             <span class="eyebrow">ProfileQR</span>
-            <h1>Contact QR Generator </h1>
+            <h1>Contact QR Generator</h1>
             <p class="muted">Create an offline contact QR or publish a complete online profile package to GitHub Pages.</p>
         </div>
     </div>
@@ -20,6 +20,18 @@
         <button class="mode-btn active" data-mode="online">🌐 Online QR</button>
         <button class="mode-btn" data-mode="offline">📦 Offline QR</button>
     </div>
+  <section class="card edit-card">
+    <div class="edit-head"><div><h2>Edit Existing Profile</h2><p class="small muted">Search by Profile ID/slug, phone number, or name.</p></div><button id="toggleEdit" class="btn secondary">Edit Existing</button></div>
+    <div id="editPanel" class="hidden">
+      <div class="form-grid">
+        <div class="form-group"><label>Search</label><input id="editSearch" placeholder="ID, slug, phone, or name"></div>
+        <div class="form-group"><label>Search by</label><select id="editType"><option value="any">Any</option><option value="id">Profile ID / Slug</option><option value="phone">Phone number</option><option value="name">Name</option></select></div>
+      </div>
+      <button id="findProfiles" class="btn primary">Find Profiles</button>
+      <div id="editResults" class="edit-results"></div>
+    </div>
+  </section>
+
 
     <div id="onlineNotice" class="notice">
         <strong>Online QR:</strong> the QR opens a public profile page. The generator uploads
@@ -419,6 +431,41 @@ $("copyURL").addEventListener("click", async () => {
         alert("Could not copy automatically. The URL is shown in the preview.");
     }
 });
+
+
+$("newId").onclick=()=>{$("slug").value=randomProfileId();};
+if(!$("slug").value)$("slug").value=randomProfileId();
+function fillForm(p){
+ const fields={slug:p.id,name:p.name,jobTitle:p.jobTitle,company:p.company,phone:p.phone,mobile:p.mobile,email:p.email,address1:p.address1,address2:p.address2,website:p.website,about:p.about,extra1:p.extra1,linkedin:p.linkedin,wechat:p.wechat,facebook:p.facebook,instagram:p.instagram,xcom:p.xcom,tiktok:p.tiktok,youtube:p.youtube};
+ Object.entries(fields).forEach(([k,v])=>{if($(k))$(k).value=v||"";});
+ $("generate").textContent=mode==="online"?"Update Online QR & Publish":"Generate Offline QR";
+ status("Profile loaded. Edit the fields, then click Generate/Update.","working");
+}
+function renderEditResults(items){
+ const box=$("editResults");
+ if(!items.length){box.innerHTML='<div class="edit-empty">No matching profiles found.</div>';return;}
+ box.innerHTML=items.map((p,i)=>`<button class="edit-result" data-i="${i}"><strong>${e(p.name||"(No name)")}</strong><span>${e(p.id||"")} ${p.phone?"• "+e(p.phone):""}</span></button>`).join("");
+ box.querySelectorAll(".edit-result").forEach(b=>b.onclick=()=>fillForm(items[+b.dataset.i]));
+}
+async function findProfiles(){
+ const q=safeValue("editSearch").toLowerCase(); if(!q){status("Enter a profile ID, slug, phone number, or name.","error");return;}
+ try{
+  const token=getGithubToken();
+  const r=await fetch("https://api.github.com/repos/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/git/trees/"+GITHUB_BRANCH+"?recursive=1",{headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}});
+  if(!r.ok)throw new Error("Could not read the GitHub profile list.");
+  const tree=await r.json(), paths=(tree.tree||[]).map(x=>x.path).filter(p=>/^profiles\\/[^/]+\\/profile\\.json$/i.test(p));
+  const all=[];
+  for(const path of paths){try{const x=await fetch("https://raw.githubusercontent.com/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/"+path,{cache:"no-store"});if(x.ok)all.push(await x.json());}catch{}}
+  const type=$("editType").value;
+  renderEditResults(all.filter(p=>{
+   const id=String(p.id||"").toLowerCase(), phone=(String(p.phone||"")+" "+String(p.mobile||"")).toLowerCase(), name=String(p.name||"").toLowerCase();
+   return type==="id"?id.includes(q):type==="phone"?phone.includes(q):type==="name"?name.includes(q):(id.includes(q)||phone.includes(q)||name.includes(q));
+  }));
+ }catch(err){status("Edit search failed: "+err.message,"error");}
+}
+$("toggleEdit").onclick=()=>$("editPanel").classList.toggle("hidden");
+$("findProfiles").onclick=findProfiles;
+$("editSearch").addEventListener("keydown",ev=>{if(ev.key==="Enter")findProfiles();});
 
 setMode("online");
 window.ProfileQR={clearGithubToken(){localStorage.removeItem(GITHUB_TOKEN_KEY);alert("Saved GitHub token cleared.");}};
