@@ -1,4 +1,4 @@
-# ProfileQR client package
+# ProfileQR client package AAA
 
 This package adds two generator modes:
 
