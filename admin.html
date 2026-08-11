@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ProfileQR Generator BBB</title>
+<title>ProfileQR Generator</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -71,12 +71,17 @@
 
       <div class="form-group">
         <label for="address1">Address 01</label>
-        <input id="address1" placeholder="House / Street">
+        <input id="address1" placeholder="Enter full address">
       </div>
 
       <div class="form-group">
         <label for="address2">Address 02</label>
-        <input id="address2" placeholder="City / Country">
+        <input id="address2" placeholder="Enter full address">
+      </div>
+
+      <div class="form-group">
+        <label for="address3">Address 03</label>
+        <input id="address3" placeholder="Enter full address">
       </div>
 
       <div class="form-group">
@@ -209,6 +214,12 @@ function normalizeUrl(value) {
 }
 
 function createVCard(profile, options = {}) {
+  const nameParts = String(profile.name || "").trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts.shift() || "";
+  const lastName = nameParts.join(" ");
+  const addressLines = [profile.address1, profile.address2, profile.address3]
+    .filter(Boolean)
+    .map((address, index) => `ADR;TYPE=${index === 0 ? "HOME" : index === 1 ? "WORK" : "OTHER"}:;;${escapeVCard(address)};;;;`);
   const includePhoto = options.includePhoto !== false;
   const photo = includePhoto && profile.photo
     ? `PHOTO;ENCODING=b;TYPE=JPEG:${profile.photo.split(",")[1]}`
@@ -228,13 +239,14 @@ function createVCard(profile, options = {}) {
   return [
     "BEGIN:VCARD",
     "VERSION:3.0",
+    `N:${escapeVCard(lastName)};${escapeVCard(firstName)};;;`,
     `FN:${escapeVCard(profile.name)}`,
     profile.jobTitle ? `TITLE:${escapeVCard(profile.jobTitle)}` : "",
     profile.company ? `ORG:${escapeVCard(profile.company)}` : "",
     profile.phone ? `TEL;TYPE=VOICE:${escapeVCard(profile.phone)}` : "",
     profile.mobile ? `TEL;TYPE=CELL:${escapeVCard(profile.mobile)}` : "",
     profile.email ? `EMAIL:${escapeVCard(profile.email)}` : "",
-    profile.address1 || profile.address2 ? `ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;` : "",
+    ...addressLines,
     profile.website ? `URL:${escapeVCard(profile.website)}` : "",
     profile.profileUrl ? `X-SOCIALPROFILE;TYPE=profile:${escapeVCard(profile.profileUrl)}` : "",
     ...socialLines,
@@ -421,6 +433,7 @@ function buildProfile() {
     email: safeValue("email"),
     address1: safeValue("address1"),
     address2: safeValue("address2"),
+    address3: safeValue("address3"),
     website: normalizeUrl(safeValue("website")),
     profileUrl: currentMode === "online" ? getProfileUrl(slug) : "",
     about: safeValue("about"),

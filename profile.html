@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contact Profile BBB</title>
+<title>Contact Profile</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,6 +33,12 @@ function normalizeWebsite(value) {
 }
 
 function createVCard(profile) {
+  const nameParts = String(profile.name || "").trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts.shift() || "";
+  const lastName = nameParts.join(" ");
+  const addressLines = [profile.address1, profile.address2, profile.address3]
+    .filter(Boolean)
+    .map((address, index) => `ADR;TYPE=${index === 0 ? "HOME" : index === 1 ? "WORK" : "OTHER"}:;;${escapeVCard(address)};;;;`);
   const social = profile.social || {};
   const socialLines = [
     ["LinkedIn", social.linkedin], ["WeChat", social.wechat], ["Facebook", social.facebook],
@@ -42,13 +48,15 @@ function createVCard(profile) {
   const photo = profile.photo ? `PHOTO;ENCODING=b;TYPE=JPEG:${String(profile.photo).split(",")[1]}` : "";
 
   return [
-    "BEGIN:VCARD","VERSION:3.0",`FN:${escapeVCard(profile.name)}`,
+    "BEGIN:VCARD","VERSION:3.0",
+    `N:${escapeVCard(lastName)};${escapeVCard(firstName)};;;`,
+    `FN:${escapeVCard(profile.name)}`,
     profile.jobTitle ? `TITLE:${escapeVCard(profile.jobTitle)}` : "",
     profile.company ? `ORG:${escapeVCard(profile.company)}` : "",
     profile.phone ? `TEL;TYPE=VOICE:${escapeVCard(profile.phone)}` : "",
     profile.mobile ? `TEL;TYPE=CELL:${escapeVCard(profile.mobile)}` : "",
     profile.email ? `EMAIL:${escapeVCard(profile.email)}` : "",
-    profile.address1 || profile.address2 ? `ADR;TYPE=HOME:;;${escapeVCard(profile.address1)};${escapeVCard(profile.address2)};;;` : "",
+    ...addressLines,
     profile.website ? `URL:${escapeVCard(normalizeWebsite(profile.website))}` : "",
     ...socialLines,
     profile.about ? `NOTE:${escapeVCard(profile.about)}` : "",
@@ -131,8 +139,6 @@ function renderProfile(profile) {
         <h1>${escapeHTML(profile.name)}</h1>
         <div class="title">${escapeHTML(profile.jobTitle)}</div>
         ${profile.company ? `<div class="company">${escapeHTML(profile.company)}</div>` : ""}
-        ${profile.about ? `<p class="about">${escapeHTML(profile.about)}</p>` : ""}
-
         <div class="profile-actions">
           <button id="saveContact" class="btn success">💾 Save Contact</button>
           ${profile.phone ? `<a class="btn primary" href="tel:${escapeHTML(profile.phone)}">📞 Call</a>` : ""}
