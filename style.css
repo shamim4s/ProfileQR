@@ -407,3 +407,49 @@ code {
     .container { padding: 20px 0 40px; }
     .mode-switch { grid-template-columns: 1fr; }
 }
+
+
+/* ProfileQR updates */
+.input-with-action { display: flex; gap: 8px; align-items: stretch; }
+.input-with-action input { flex: 1; min-width: 0; }
+.small-btn { padding: 10px 13px; white-space: nowrap; }
+.social-input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.company { color: var(--text); font-weight: 700; margin-top: 5px; }
+.preview #previewCompany { margin-top: -4px; }
+.qr-error { padding: 20px; color: #991b1b; text-align: center; line-height: 1.5; }
+.social-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.social-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text);
+    background: #f8fafc;
+    font-weight: 700;
+}
+.social-link:hover { transform: translateY(-1px); background: #eef2ff; }
+.social-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #111827;
+    color: white;
+    font-weight: 900;
+    flex: 0 0 30px;
+}
+.contact-socials { margin-top: 12px; }
+.contact-socials .social-links { grid-template-columns: 1fr; }
+.contact-socials .social-link { padding: 7px 0; border: 0; background: transparent; }
+.contact-socials .social-link:hover { background: transparent; }
+
+@media (max-width: 600px) {
+    .social-input-grid, .social-links { grid-template-columns: 1fr; }
+    .input-with-action { flex-direction: column; }
+    .small-btn { width: 100%; }
+}
