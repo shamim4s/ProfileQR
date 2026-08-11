@@ -1,0 +1,127 @@
+name: ProfileQR Publisher
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: profileqr-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: contains(github.event.issue.labels.*.name, 'profileqr-publish')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Parse and validate publish request
+        id: request
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          extract() {
+            local key="$1"
+            printf '%s\n' "$ISSUE_BODY" | awk -v k="$key" 'index($0,k": ")==1 {sub("^"k": ",""); print; exit}'
+          }
+
+          PROFILE_JSON_B64="$(extract PROFILE_JSON_B64)"
+          VCARD_B64="$(extract VCARD_B64)"
+          QR_DATA_URL_B64="$(extract QR_DATA_URL_B64)"
+          PROFILE_URL="$(extract PROFILE_URL)"
+          OPERATION="$(extract OPERATION)"
+          BRANCH="$(extract BRANCH)"
+
+          test "$OPERATION" = "upsert"
+          test "$BRANCH" = "master"
+          test -n "$PROFILE_JSON_B64"
+          test -n "$VCARD_B64"
+          test -n "$QR_DATA_URL_B64"
+
+          mkdir -p "$RUNNER_TEMP/profileqr"
+          printf '%s' "$PROFILE_JSON_B64" | base64 --decode > "$RUNNER_TEMP/profileqr/profile.json"
+          printf '%s' "$VCARD_B64" | base64 --decode > "$RUNNER_TEMP/profileqr/contact.vcf"
+          printf '%s' "$QR_DATA_URL_B64" | base64 --decode > "$RUNNER_TEMP/profileqr/qrdata.txt"
+
+          python3 - <<'PY'
+          import json, os, re, base64
+          root=os.environ["RUNNER_TEMP"]+"/profileqr"
+          with open(root+"/profile.json","r",encoding="utf-8") as f:
+              p=json.load(f)
+
+          pid=str(p.get("id","")).strip()
+          if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", pid):
+              raise SystemExit("Invalid profile ID")
+
+          # Keep the public URL on the intended GitHub Pages host.
+          expected=f"https://shamim4s.github.io/ProfileQR/profile.html?id={pid}"
+          p["profileUrl"]=expected
+
+          with open(root+"/profile.json","w",encoding="utf-8") as f:
+              json.dump(p,f,ensure_ascii=False,indent=2)
+              f.write("\n")
+
+          with open(root+"/profile-url.txt","w",encoding="utf-8") as f:
+              f.write(expected+"\n")
+
+          data=open(root+"/qrdata.txt","r",encoding="utf-8").read().strip()
+          if not data.startswith("data:image/"):
+              raise SystemExit("Invalid QR data URL")
+          header, encoded=data.split(",",1)
+          raw=base64.b64decode(encoded)
+          with open(root+"/qr.png","wb") as f:
+              f.write(raw)
+          PY
+
+          ID="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/profileqr/profile.json"))["id"])')"
+          echo "profile_id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: Write profile files
+        env:
+          PROFILE_ID: ${{ steps.request.outputs.profile_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEST="profiles/$PROFILE_ID"
+          mkdir -p "$DEST"
+          cp "$RUNNER_TEMP/profileqr/profile.json" "$DEST/profile.json"
+          cp "$RUNNER_TEMP/profileqr/contact.vcf" "$DEST/contact.vcf"
+          cp "$RUNNER_TEMP/profileqr/qr.png" "$DEST/qr.png"
+          cp "$RUNNER_TEMP/profileqr/profile-url.txt" "$DEST/profile-url.txt"
+
+      - name: Commit and push to master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROFILE_ID: ${{ steps.request.outputs.profile_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "ProfileQR Publisher"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "profiles/$PROFILE_ID"
+          if git diff --cached --quiet; then
+            echo "No file changes."
+          else
+            git commit -m "ProfileQR: publish $PROFILE_ID"
+            git push origin master
+          fi
+
+      - name: Close processed request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh issue close "$ISSUE_NUMBER" --repo "$REPO" --comment "ProfileQR publish completed successfully." --reason completed

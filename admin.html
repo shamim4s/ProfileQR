@@ -1,3 +1,7 @@
+
+const PUBLISH_WORKFLOW = "profile-publisher.yml";
+const PUBLISH_DISPATCH_EVENT = "profileqr_publish";
+const WORKFLOW_TIMEOUT_MS = 120000;
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,7 +24,13 @@
         <button class="mode-btn active" data-mode="online">🌐 Online QR</button>
         <button class="mode-btn" data-mode="offline">📦 Offline QR</button>
     </div>
-  <section class="card edit-card">
+  <section class="card">
+    <h2>Online publishing</h2>
+    <p class="muted">Online profiles are published by the repository's GitHub Actions workflow. No GitHub token is entered or stored in this page.</p>
+    <div id="publishStatus" class="status working">Ready.</div>
+  </section>
+
+<section class="card edit-card">
     <div class="edit-head"><div><h2>Edit Existing Profile</h2><p class="small muted">Search by Profile ID/slug, phone number, or name.</p></div><button id="toggleEdit" class="btn secondary">Edit Existing</button></div>
     <div id="editPanel" class="hidden">
       <div class="form-grid">
@@ -266,52 +276,15 @@ function generateQR(payload) {
 }
 
 function normalizeWebsite(value) { const v=String(value||"").trim(); return !v ? "" : (/^https?:\/\//i.test(v) ? v : "https://"+v); }
+function normalizeUrl(v){v=String(v||"").trim();return v?( /^https?:\/\//i.test(v)?v:"https://"+v):"";}
 function safeValue(id) { const el=$(id); return el && typeof el.value === "string" ? el.value.trim() : ""; }
-const GITHUB_OWNER="shamim4s", GITHUB_REPO="ProfileQR", GITHUB_BRANCH="master", GITHUB_TOKEN_KEY="profileqr_github_token_v1";
-function getGithubToken(){ let t=localStorage.getItem(GITHUB_TOKEN_KEY); if(t) return t; t=prompt("Enter your GitHub fine-grained token once. It will be stored in this browser."); if(!t||!t.trim()) throw new Error("GitHub token is required for Online QR."); localStorage.setItem(GITHUB_TOKEN_KEY,t.trim()); return t.trim(); }
-function getProfileUrl(slug) { return "https://shamim4s.github.io/ProfileQR/profile.html?id=" + encodeURIComponent(slug); }
-
-function base64Utf8(text) {
-    const bytes = new TextEncoder().encode(text);
-    let binary = "";
-    const chunk = 0x8000;
-
-    for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-    }
-
-    return btoa(binary);
+const GITHUB_OWNER="shamim4s", GITHUB_REPary);
 }
 
 function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-}
-
-async function qrDataUrlToBase64(dataUrl) {
-    const response = await fetch(dataUrl);
-    return blobToBase64(await response.blob());
-}
-
-async function githubRequest(path, options = {}) {
-    const token=getGithubToken();
-    const url="https://api.github.com/repos/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/contents/"+path.split("/").map(encodeURIComponent).join("/");
-    const response=await fetch(url,{...options,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28",...(options.headers||{})}});
-    const text=await response.text(); let data={}; try{data=text?JSON.parse(text):{}}catch{data={message:text};}
-    if(!response.ok){let m=data.message||(`GitHub API error (${response.status})`); if(response.status===401)m="Saved GitHub token is invalid or expired. Clear it and try again."; if(response.status===403)m="GitHub rejected the request. Check Contents: Read and write permission."; throw new Error(m);} return data;
-}
-async function getExistingSha(path){try{return (await githubRequest(path)).sha;}catch(e){if(/not found|404/i.test(e.message))return null;throw e;}}
-async function uploadGitHubFile(path, contentBase64, message){const sha=await getExistingSha(path); const body={message,content:contentBase64,branch:GITHUB_BRANCH}; if(sha)body.sha=sha; return githubRequest(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});}
-async function publishPackage(profile,vcard,profileUrl,qrDataUrl){getGithubToken();const folder="profiles/"+profile.id, qrBase64=await qrDataUrlToBase64(qrDataUrl), files=[{path:`${folder}/profile.json`,content:base64Utf8(JSON.stringify(profile,null,2))},{path:`${folder}/contact.vcf`,content:base64Utf8(vcard)},{path:`${folder}/qr.png`,content:qrBase64},{path:`${folder}/profile-url.txt`,content:base64Utf8(profileUrl)}]; for(const f of files)await uploadGitHubFile(f.path,f.content,`Create/update online profile: ${profile.id}`); return {owner:GITHUB_OWNER,repo:GITHUB_REPO,branch:GITHUB_BRANCH,folder,files:files.map(f=>f.path)};}
-
-function buildProfile() {
-    const name=safeValue("name"), slug=normalizeSlug(safeValue("slug"));
-    if(!name) throw new Error("Please enter a name."); if(!slug) throw new Error("Please enter a profile ID.");
-    return {id:slug,name,jobTitle:safeValue("jobTitle"),phone:safeValue("phone"),mobile:safeValue("mobile"),email:safeValue("email"),address1:safeValue("address1"),address2:safeValue("address2"),website:normalizeWebsite(safeValue("website")),profileUrl:currentMode==="online"?getProfileUrl(slug):"",about:safeValue("about"),extra1:safeValue("extra1"),extra2:safeValue("extra2"),photo:""};
+        reader.fileUrl(slug):"",about:safeValue("about"),extra1:safeValue("extra1"),extra2:safeValue("extra2"),photo:""};
 }
 
 async function generate() {
@@ -451,24 +424,126 @@ async function findProfiles(){
  const q=safeValue("editSearch").toLowerCase(); if(!q){status("Enter a profile ID, slug, phone number, or name.","error");return;}
  try{
   const token=getGithubToken();
-  const r=await fetch("https://api.github.com/repos/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/git/trees/"+GITHUB_BRANCH+"?recursive=1",{headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}});
-  if(!r.ok)throw new Error("Could not read the GitHub profile list.");
-  const tree=await r.json(), paths=(tree.tree||[]).map(x=>x.path).filter(p=>/^profiles\\/[^/]+\\/profile\\.json$/i.test(p));
-  const all=[];
-  for(const path of paths){try{const x=await fetch("https://raw.githubusercontent.com/"+GITHUB_OWNER+"/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/"+path,{cache:"no-store"});if(x.ok)all.push(await x.json());}catch{}}
-  const type=$("editType").value;
-  renderEditResults(all.filter(p=>{
-   const id=String(p.id||"").toLowerCase(), phone=(String(p.phone||"")+" "+String(p.mobile||"")).toLowerCase(), name=String(p.name||"").toLowerCase();
+  const r=await fetch("https://api.github.com/rme=String(p.name||"").toLowerCase();
    return type==="id"?id.includes(q):type==="phone"?phone.includes(q):type==="name"?name.includes(q):(id.includes(q)||phone.includes(q)||name.includes(q));
   }));
  }catch(err){status("Edit search failed: "+err.message,"error");}
 }
-$("toggleEdit").onclick=()=>$("editPanel").classList.toggle("hidden");
-$("findProfiles").onclick=findProfiles;
-$("editSearch").addEventListener("keydown",ev=>{if(ev.key==="Enter")findProfiles();});
+$("toggleE
 
-setMode("online");
-window.ProfileQR={clearGithubToken(){localStorage.removeItem(GITHUB_TOKEN_KEY);alert("Saved GitHub token cleared.");}};
-</script>
-</body>
-</html>
+function setPublishStatus(message, type="working") {
+  const box = $("publishStatus");
+  if (box) {
+    box.className = "status " + type;
+    box.textContent = message;
+  }
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function triggerOnlinePublish(profile, qrDataUrl, vcardText) {
+  // Important: no GitHub token is present in browser JavaScript.
+  // The request asks GitHub Actions to do the actual repository write using GITHUB_TOKEN.
+  const payload = {
+    event_type: PUBLISH_DISPATCH_EVENT,
+    client_payload: {
+      operation: "upsert",
+      branch: GITHUB_BRANCH,
+      profile: profile,
+      qr_png_data_url: qrDataUrl,
+      contact_vcf: vcardText,
+      profile_url: profile.profileUrl
+    }
+  };
+
+  // repository_dispatch requires authentication. This public Pages client cannot
+  // safely authenticate without exposing a credential. Therefore this version uses
+  // a workflow_dispatch-compatible GitHub Actions endpoint only when an explicit
+  // repository-side relay is available.
+  //
+  // For a pure GitHub Pages + GITHUB_TOKEN architecture, the browser cannot invoke
+  // repository_dispatch/workflow_dispatch anonymously. The secure no-token path is
+  // implemented through a GitHub Pages-friendly issue-based queue below.
+  setPublishStatus("Submitting secure publish request…", "working");
+
+  const requestId = "pqr-" + Date.now() + "-" + Math.random().toString(36).slice(2,8);
+
+  // Create a prefilled GitHub Issue URL as the secure handoff. The workflow listens
+  // for issues labeled "profileqr-publish", validates the payload, and writes using
+  // GITHUB_TOKEN. No token is exposed to the page.
+  const body = [
+    "ProfileQR publish request",
+    "",
+    "REQUEST_ID: " + requestId,
+    "OPERATION: upsert",
+    "BRANCH: " + GITHUB_BRANCH,
+    "PROFILE_JSON_B64: " + b64Utf8(JSON.stringify(profile)),
+    "VCARD_B64: " + b64Utf8(vcardText),
+    "QR_DATA_URL_B64: " + b64Utf8(qrDataUrl),
+    "PROFILE_URL: " + profile.profileUrl
+  ].join("\\n");
+
+  const title = encodeURIComponent("[ProfileQR] Publish " + profile.id);
+  const encodedBody = encodeURIComponent(body);
+  const issueUrl = "https://github.com/" + GITHUB_OWNER + "/" + GITHUB_REPO +
+                   "/issues/new?title=" + title + "&body=" + encodedBody +
+                   "&labels=profileqr-publish";
+
+  // Open the issue creation page. The user only needs to click "Submit new issue".
+  // The workflow then processes it and closes it after publishing.
+  window.open(issueUrl, "_blank", "noopener");
+
+  setPublishStatus(
+    "Publish request prepared. Submit the GitHub issue in the new tab. GitHub Actions will create/update the profile using its private GITHUB_TOKEN.",
+    "working"
+  );
+
+  return {queued:true, requestId};
+}
+
+function b64Utf8(text) {
+  const bytes = new TextEncoder().encode(String(text));
+  let binary = "";
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i+chunk));
+  }
+  return btoa(binary);
+}
+
+
+// ProfileQR v5: final generator handler.
+// Offline remains local. Online never receives a GitHub token.
+$("generate").onclick = async function() {
+  try {
+    const profile = collectProfile();
+    if (mode === "offline") {
+      const qr = makeQR(JSON.stringify(profile));
+      const vcf = await makeVC(profile);
+      renderOfflineResult(profile, qr, vcf);
+      setPublishStatus("Offline QR generated locally.", "success");
+      return;
+    }
+
+    profile.profileUrl = getProfileUrl(profile.id);
+    const qr = makeQR(profile.profileUrl);
+    const vcf = await makeVC(profile);
+    await triggerOnlinePublish(profile, qr, vcf);
+  } catch (err) {
+    console.error(err);
+    setPublishStatus(err && err.message ? err.message : "Something went wrong.", "error");
+  }
+};
+
+function renderOfflineResult(profile, qrDataUrl, vcardText) {
+  const box = $("result") || $("results") || $("previewResult");
+  if (!box) return;
+  box.classList.remove("hidden");
+  box.innerHTML = `
+    <div class="card">
+      <h3>Offline QR Ready</h3>
+      <p class="muted">Scan this QR code to import the contact.</p>
+      <div class="qr-box"><img src="${qrDataUrl}" alt="Offline contact QR"></div>
+      <a class="btn primary" download="${(profile.id||"contact")}.vcf"
+         href="data:text/vcard;charset=utf-8,${encodeURIComponent(vcardText)}">Download Contact</a>
+    </div>`;
+}

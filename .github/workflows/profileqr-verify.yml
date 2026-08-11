@@ -1,0 +1,23 @@
+name: ProfileQR Workflow Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Verify package
+        run: |
+          test -f admin.html
+          test -f profile.html
+          test -f qrcode.min.js
+          test -f style.css
+          test -f .github/workflows/profile-publisher.yml
+          echo "ProfileQR package verified."
