@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    .hidden { display: none; }
+    .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 15px; }
+    input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
+    button { background: #0066cc; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 4px; cursor: pointer; }
+    .error { color: red; margin-top: 10px; }
+  </style>
+
+  <!-- 1. Include check_url.js -->
+  <script src="./check_url.js"></script>
+</head>
+<body>
+
+  <h2>Admin Verification</h2>
+
+  <!-- LOGIN FORM -->
+  <div id="loginForm" class="card">
+    <label for="adminPass">Enter Admin Password:</label>
+    <input type="password" id="adminPass" placeholder="Password">
+
+    <div id="manualTokenContainer" class="hidden">
+      <label for="manualToken">GitHub Token (WASM Token Not Found):</label>
+      <input type="password" id="manualToken" placeholder="ghp_... or github_pat_...">
+    </div>
+
+    <button onclick="attemptLogin()">Login</button>
+    <div id="statusMsg" class="error"></div>
+  </div>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="adminPanel" class="card hidden">
+    <h3>Welcome, Admin!</h3>
+    <p>Active Token Status: <strong id="tokenStatus">Ready</strong></p>
+    <button onclick="performAdminTask()">Create / Edit Profile</button>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = "shamim4s";
+    let GITHUB_TOKEN = null;
+
+    // Check WASM token availability on page load
+    window.addEventListener("DOMContentLoaded", async () => {
+      if (typeof getWasmToken === "function") {
+        GITHUB_TOKEN = await getWasmToken();
+      }
+
+      // If check_url.js failed or returned null, show manual token input field
+      if (!GITHUB_TOKEN) {
+        document.getElementById("manualTokenContainer").classList.remove("hidden");
+      }
+    });
+
+    // Handle Admin Password Login & Token Validation
+    function attemptLogin() {
+      const enteredPass = document.getElementById("adminPass").value;
+      const statusMsg = document.getElementById("statusMsg");
+
+      // Verify Password
+      if (enteredPass !== ADMIN_PASSWORD) {
+        statusMsg.textContent = "Incorrect password.";
+        return;
+      }
+
+      // Fallback: Check if manual token was provided if WASM token was missing
+      if (!GITHUB_TOKEN) {
+        const inputToken = document.getElementById("manualToken").value.trim();
+        if (!inputToken) {
+          statusMsg.textContent = "Password correct, but GitHub Token is required.";
+          return;
+        }
+        GITHUB_TOKEN = inputToken;
+      }
+
+      // Successful Login
+      statusMsg.textContent = "";
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+      
+      console.log("Authenticated! Active Token is active in memory.");
+    }
+
+    // Example function using the loaded GITHUB_TOKEN
+    async function performAdminTask() {
+      alert("Performing admin action with token: " + GITHUB_TOKEN.substring(0, 7) + "...");
+      // Add your GitHub API fetch() calls here using GITHUB_TOKEN
+    }
+  </script>
+</body>
+</html>
