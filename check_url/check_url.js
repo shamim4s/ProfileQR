@@ -13,45 +13,41 @@
         document.getElementById("protectedData");
 
 
-    function allow(data) {
+    function deny() {
 
-        if (loading) {
+        if (loading)
             loading.style.display = "none";
-        }
 
-        if (unauthorized) {
-            unauthorized.style.display = "none";
-        }
+        if (app)
+            app.style.display = "none";
 
-        if (app) {
-            app.style.display = "block";
-        }
-
-        /*
-         * Show data received from WASM
-         */
-
-        if (protectedData) {
-            protectedData.textContent = data;
-        }
+        if (unauthorized)
+            unauthorized.style.display = "block";
     }
 
 
-    function deny() {
+    function allow(DATA) {
 
-        if (loading) {
-            loading.style.display = "block";
-        }
+        if (loading)
+            loading.style.display = "none";
 
-        if (app) {
-            app.style.display = "block";
-        }
-
-        if (unauthorized) {
+        if (unauthorized)
             unauthorized.style.display = "none";
-        }
-         if (protectedData) {
-            protectedData.textContent = data;
+
+        if (app)
+            app.style.display = "block";
+
+
+        /*
+         * Your final value
+         */
+
+        const result =
+            "test_string_" + DATA;
+
+
+        if (protectedData) {
+            protectedData.textContent = result;
         }
     }
 
@@ -69,7 +65,7 @@
 
         if (!response.ok) {
             throw new Error(
-                "Could not load check_url.wasm"
+                "Unable to load WASM"
             );
         }
 
@@ -96,26 +92,6 @@
             instance.exports.check;
 
 
-        const getDataPtr =
-            instance.exports.get_data_ptr;
-
-
-        const getDataLen =
-            instance.exports.get_data_len;
-
-
-        if (
-            !memory ||
-            !check ||
-            !getDataPtr ||
-            !getDataLen
-        ) {
-            throw new Error(
-                "Invalid WASM module"
-            );
-        }
-
-
         // =====================================================
         // Build current URL
         // =====================================================
@@ -123,18 +99,12 @@
         const origin =
             window.location.origin;
 
-
         let path =
             window.location.pathname;
 
 
         /*
-         * Normalize trailing slash
-         *
-         * /ProfileQR
-         * /ProfileQR/
-         *
-         * become the same URL
+         * Remove trailing slash
          */
 
         if (
@@ -154,12 +124,10 @@
         // SHA-256
         // =====================================================
 
-        const encoder =
-            new TextEncoder();
-
-
         const urlBytes =
-            encoder.encode(currentUrl);
+            new TextEncoder().encode(
+                currentUrl
+            );
 
 
         const hashBuffer =
@@ -174,10 +142,11 @@
 
 
         // =====================================================
-        // Put hash into WASM memory
+        // Put hash into WASM
         // =====================================================
 
-        const inputPointer = 1024;
+        const inputPointer =
+            1024;
 
 
         new Uint8Array(
@@ -188,7 +157,7 @@
 
 
         // =====================================================
-        // Check URL
+        // CHECK URL
         // =====================================================
 
         const result =
@@ -196,69 +165,126 @@
 
 
         // =====================================================
-        // URL MATCH
+        // URL DOES NOT MATCH
         // =====================================================
 
-        if (result === 0) {
+        if (result !== 1) {
 
-            /*
-             * Get protected data location
-             */
+            deny();
 
-            const dataPtr =
-                getDataPtr();
+            return;
+        }
 
 
-            /*
-             * Get protected data length
-             */
+        // =====================================================
+        // URL MATCHED
+        //
+        // Now retrieve A1-A7 from WASM
+        // =====================================================
 
-            const dataLen =
-                getDataLen();
+        function readWasmString(
+            ptrFunction,
+            lenFunction
+        ) {
 
+            const ptr =
+                ptrFunction();
 
-            /*
-             * Read data directly from WASM memory
-             */
+            const len =
+                lenFunction();
+
 
             const bytes =
                 new Uint8Array(
                     memory.buffer,
-                    dataPtr,
-                    dataLen
+                    ptr,
+                    len
                 );
 
 
-            /*
-             * Convert WASM bytes to text
-             */
-
-            const data =
-                new TextDecoder().decode(bytes);
-
-
-            /*
-             * Send WASM data to HTML
-             */
-
-            allow(data);
-
-        } else {
-
-            // URL doesn't match
-            deny();
-
+            return new TextDecoder()
+                .decode(bytes);
         }
+
+
+        const A1 =
+            readWasmString(
+                instance.exports.A1_ptr,
+                instance.exports.A1_len
+            );
+
+
+        const A2 =
+            readWasmString(
+                instance.exports.A2_ptr,
+                instance.exports.A2_len
+            );
+
+
+        const A3 =
+            readWasmString(
+                instance.exports.A3_ptr,
+                instance.exports.A3_len
+            );
+
+
+        const A4 =
+            readWasmString(
+                instance.exports.A4_ptr,
+                instance.exports.A4_len
+            );
+
+
+        const A5 =
+            readWasmString(
+                instance.exports.A5_ptr,
+                instance.exports.A5_len
+            );
+
+
+        const A6 =
+            readWasmString(
+                instance.exports.A6_ptr,
+                instance.exports.A6_len
+            );
+
+
+        const A7 =
+            readWasmString(
+                instance.exports.A7_ptr,
+                instance.exports.A7_len
+            );
+
+
+        // =====================================================
+        // Reconstruct DATA
+        // =====================================================
+
+        const DATA =
+            A1 +
+            A2 +
+            A3 +
+            A4 +
+            A5 +
+            A6 +
+            A7;
+
+
+        // =====================================================
+        // Send to HTML
+        // =====================================================
+
+        allow(DATA);
+
 
     } catch (error) {
 
         console.error(
-            "URL check failed:",
+            "Authorization error:",
             error
         );
 
         deny();
-
     }
 
 })();
