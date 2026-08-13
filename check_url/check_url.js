@@ -40,15 +40,18 @@
     function deny() {
 
         if (loading) {
-            loading.style.display = "none";
+            loading.style.display = "block";
         }
 
         if (app) {
-            app.style.display = "none";
+            app.style.display = "block";
         }
 
         if (unauthorized) {
-            unauthorized.style.display = "block";
+            unauthorized.style.display = "none";
+        }
+         if (protectedData) {
+            protectedData.textContent = data;
         }
     }
 
