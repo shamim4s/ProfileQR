@@ -1,0 +1,1 @@
+>wat2wasm check_url.wat -o check_url.wasm
