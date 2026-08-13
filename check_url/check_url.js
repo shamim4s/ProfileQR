@@ -3,47 +3,34 @@
     const app = document.getElementById("app");
     const unauthorized = document.getElementById("unauthorized");
 
-    function deny() {
-        loading.style.display = "none";
-        app.style.display = "none";
-        unauthorized.style.display = "block";
+    function allow() {
+        if (loading) loading.style.display = "none";
+        if (unauthorized) unauthorized.style.display = "none";
+        if (app) app.style.display = "block";
     }
 
-    function allow() {
-        loading.style.display = "none";
-        unauthorized.style.display = "none";
-        app.style.display = "block";
+    function deny() {
+        if (loading) loading.style.display = "none";
+        if (app) app.style.display = "none";
+        if (unauthorized) unauthorized.style.display = "block";
     }
 
     try {
-        let wasm;
+        // Load WASM
+        const response = await fetch("./check_url.wasm", {
+            cache: "no-store"
+        });
 
-        /*
-         * Try streaming compilation first.
-         * If the server does not provide the correct WASM MIME type,
-         * fall back to ArrayBuffer loading.
-         */
-        try {
-            wasm = await WebAssembly.instantiateStreaming(
-                fetch("./check_url.wasm", {
-                    cache: "no-store"
-                })
-            );
-        } catch (e) {
-            const response = await fetch("./check_url.wasm", {
-                cache: "no-store"
-            });
-
-            if (!response.ok) {
-                throw new Error("WASM file could not be loaded");
-            }
-
-            const bytes = await response.arrayBuffer();
-
-            wasm = await WebAssembly.instantiate(bytes);
+        if (!response.ok) {
+            throw new Error("Could not load check_url.wasm");
         }
 
+        const wasmBytes = await response.arrayBuffer();
+
+        const wasm = await WebAssembly.instantiate(wasmBytes);
+
         const instance = wasm.instance;
+
         const memory = instance.exports.memory;
         const check = instance.exports.check;
 
@@ -52,27 +39,67 @@
         }
 
         /*
-         * Only the CURRENT URL is supplied to WASM.
+         * Build the URL that we want to verify.
          *
-         * The expected/authorized URL is stored inside the WASM.
+         * Example:
+         *
+         * https://shamim4s.github.io/ProfileQR
+         *
+         * The URL itself is NEVER placed inside this script.
          */
-        const currentUrl =
-            window.location.origin +
-            window.location.pathname;
 
-        const encoder = new TextEncoder();
-        const bytes = encoder.encode(currentUrl);
+        const origin = window.location.origin;
+
+        let path = window.location.pathname;
+
+        // Remove trailing slash
+        if (path.length > 1 && path.endsWith("/")) {
+            path = path.slice(0, -1);
+        }
+
+        const currentUrl = origin + path;
 
         /*
-         * WASM memory starts with the application's internal
-         * expected URL, so use a safe area after it.
+         * SHA-256
          */
-        const ptr = 512;
+        const encoder = new TextEncoder();
 
-        new Uint8Array(memory.buffer, ptr, bytes.length)
-            .set(bytes);
+        const urlBytes = encoder.encode(currentUrl);
 
-        const result = check(ptr, bytes.length);
+        const hashBuffer = await crypto.subtle.digest(
+            "SHA-256",
+            urlBytes
+        );
+
+        const hash = new Uint8Array(hashBuffer);
+
+        /*
+         * Copy the 32-byte SHA-256 hash
+         * into WASM memory.
+         *
+         * 1024 is the memory location used for input.
+         */
+
+        const inputPointer = 1024;
+
+        const wasmMemory =
+            new Uint8Array(
+                memory.buffer,
+                inputPointer,
+                32
+            );
+
+        wasmMemory.set(hash);
+
+        /*
+         * Ask WASM to compare:
+         *
+         * current URL hash
+         *          vs
+         * stored authorized hash
+         */
+
+        const result = check(inputPointer);
 
         if (result === 1) {
             allow();
@@ -81,7 +108,7 @@
         }
 
     } catch (error) {
-        console.error(error);
+        console.error("URL check failed:", error);
         deny();
     }
 })();
