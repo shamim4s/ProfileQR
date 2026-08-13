@@ -1,0 +1,14 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Doe;Motu;;;
+FN:Motu Doe
+ORG:Example Company
+TITLE:Software Engineer
+TEL;TYPE=CELL:+8801712345678
+TEL;TYPE=WORK:+88029876543
+EMAIL;TYPE=INTERNET:motu.doe@example.com
+ADR;TYPE=WORK:;;123 Main Street;Dhaka;;1205;Bangladesh
+URL:https://example.com
+NOTE:Test contact with remote photo URL.
+PHOTO;VALUE=URI;TYPE=PNG:https://rosepng.com/wp-content/uploads/elementor/thumbs/s11728_motu_patlu_isolated_on_white_background_31e7b41f-b637-4c8b-a85e-43736e603a22_2-photoroom-qs24cppckiwjyjye4i6dqts2n2twanbum86g13dew0.png
+END:VCARD

@@ -1,0 +1,13 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Doe;Motu;;;
+FN:Motu Doe
+ORG:Example Company
+TITLE:Software Engineer
+TEL;TYPE=CELL:+8801712345678
+TEL;TYPE=WORK:+88029876543
+EMAIL;TYPE=INTERNET:motu.doe@example.com
+ADR;TYPE=WORK:;;123 Main Street;Dhaka;;1205;Bangladesh
+URL:https://example.com
+NOTE:Test contact without photo.
+END:VCARD

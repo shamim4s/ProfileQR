@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Android Contact Test</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 25px 15px;
+            font-family: Arial, sans-serif;
+            background: #f2f4f7;
+            color: #222;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+        }
+
+        .profile {
+            display: block;
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            border: 4px solid #eee;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 5px 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 25px;
+        }
+
+        .test {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 15px;
+        }
+
+        .test h2 {
+            font-size: 18px;
+            margin: 0 0 8px;
+        }
+
+        .test p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            border: 0;
+            border-radius: 9px;
+            padding: 14px;
+            margin-top: 12px;
+            background: #1976d2;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .button.green {
+            background: #16803c;
+        }
+
+        .button.orange {
+            background: #e87500;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #664d03;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <img
+            class="profile"
+            src="https://rosepng.com/wp-content/uploads/elementor/thumbs/s11728_motu_patlu_isolated_on_white_background_31e7b41f-b637-4c8b-a85e-43736e603a22_2-photoroom-qs24cppckiwjyjye4i6dqts2n2twanbum86g13dew0.png"
+            alt="Test Contact"
+        >
+
+        <h1>Motu Test Contact</h1>
+
+        <div class="subtitle">
+            Android vCard Test
+        </div>
+
+        <!-- TEST 1 -->
+
+        <div class="test">
+
+            <h2>1. Contact — No Picture</h2>
+
+            <p>
+                Tests a normal vCard without any photo.
+            </p>
+
+            <a
+                class="button"
+                href="contact-no-photo.vcf"
+                download="contact-no-photo.vcf"
+            >
+                Download / Open VCF
+            </a>
+
+        </div>
+
+
+        <!-- TEST 2 -->
+
+        <div class="test">
+
+            <h2>2. Contact — Picture URL</h2>
+
+            <p>
+                The VCF contains a PHOTO URL. Android may or may not
+                download the remote image depending on the Contacts app.
+            </p>
+
+            <a
+                class="button orange"
+                href="contact-photo-url.vcf"
+                download="contact-photo-url.vcf"
+            >
+                Download / Open VCF
+            </a>
+
+        </div>
+
+
+        <!-- TEST 3 -->
+<!-- 
+        <div class="test">
+
+            <h2>3. Contact — Embedded Base64 Picture</h2>
+
+            <p>
+                This is the most important test. The image is downloaded
+                and embedded directly inside the VCF as Base64.
+            </p>
+
+            <button
+                class="button green"
+                onclick="createBase64VCF()"
+            >
+                Generate & Open Base64 VCF
+            </button>
+
+            <div id="status" class="status">
+                Waiting...
+            </div>
+
+        </div>  -->
+
+        <div class="test">
+
+            <h2>3. Contact — Embedded Base64 Picture</h2>
+
+            <p>
+                This is the most important test. The image is downloaded
+                and embedded directly inside the VCF as Base64.
+            </p>
+
+            <a
+                class="button green"
+                href="contact-photo-base64.vcf"
+                download="contact-photo-base64.vcf"
+            >
+                Download / Open Base64 VCF
+            </a>
+
+
+
+        </div>
+
+
+        <div class="warning">
+            <strong>Android note:</strong>
+            Different Android phones use different Contacts applications.
+            Samsung, Google Pixel, Xiaomi, OnePlus, etc. may handle vCard
+            photos differently. The Base64 version gives the Contacts app
+            the actual image data instead of requiring it to download an
+            external image.
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const PHOTO_URL =
+    "https://rosepng.com/wp-content/uploads/elementor/thumbs/s11728_motu_patlu_isolated_on_white_background_31e7b41f-b637-4c8b-a85e-43736e603a22_2-photoroom-qs24cppckiwjyjye4i6dqts2n2twanbum86g13dew0.png";
+
+
+function foldBase64(base64, lineLength = 72) {
+
+    let result = "";
+
+    for (let i = 0; i < base64.length; i += lineLength) {
+
+        const chunk = base64.substring(i, i + lineLength);
+
+        if (i === 0) {
+            result += chunk;
+        } else {
+            result += "\r\n " + chunk;
+        }
+    }
+
+    return result;
+}
+
+
+async function createBase64VCF() {
+
+    const status = document.getElementById("status");
+
+    status.innerHTML = "Downloading image...";
+
+    try {
+
+        const response = await fetch(PHOTO_URL, {
+            mode: "cors"
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                "Image download failed. HTTP " + response.status
+            );
+        }
+
+        const blob = await response.blob();
+
+        status.innerHTML = "Converting image to Base64...";
+
+        const reader = new FileReader();
+
+        reader.onloadend = function () {
+
+            try {
+
+                const dataUrl = reader.result;
+
+                /*
+                 * dataUrl looks like:
+                 *
+                 * data:image/png;base64,AAAA....
+                 *
+                 * We only need the Base64 part.
+                 */
+
+                const base64 = dataUrl.split(",")[1];
+
+                const mimeType =
+                    blob.type || "image/png";
+
+                let photoType = "PNG";
+
+                if (mimeType.toLowerCase().includes("jpeg") ||
+                    mimeType.toLowerCase().includes("jpg")) {
+
+                    photoType = "JPEG";
+
+                } else if (
+                    mimeType.toLowerCase().includes("gif")
+                ) {
+
+                    photoType = "GIF";
+                }
+
+
+                const foldedBase64 =
+                    foldBase64(base64);
+
+
+                /*
+                 * vCard 3.0
+                 *
+                 * PHOTO;ENCODING=b;TYPE=PNG:
+                 * BASE64DATA
+                 */
+
+                const vcf =
+`BEGIN:VCARD\r
+VERSION:3.0\r
+N:Doe;Motu;;;\r
+FN:Motu Doe\r
+ORG:Example Company\r
+TITLE:Software Engineer\r
+TEL;TYPE=CELL:+8801712345678\r
+TEL;TYPE=WORK:+88029876543\r
+EMAIL;TYPE=INTERNET:motu.doe@example.com\r
+ADR;TYPE=WORK:;;123 Main Street;Dhaka;;1205;Bangladesh\r
+URL:https://example.com\r
+NOTE:Base64 embedded photo test contact.\r
+PHOTO;ENCODING=b;TYPE=${photoType}:${foldedBase64}\r
+END:VCARD\r
+`;
+
+
+                const vcfBlob = new Blob(
+                    [vcf],
+                    {
+                        type: "text/vcard;charset=utf-8"
+                    }
+                );
+
+
+                const url =
+                    URL.createObjectURL(vcfBlob);
+
+
+                /*
+                 * Open the generated VCF.
+                 *
+                 * On Android this should invoke the
+                 * available contact/vCard handler.
+                 */
+
+                const link =
+                    document.createElement("a");
+
+                link.href = url;
+
+                link.download =
+                    "contact-photo-base64.vcf";
+
+                document.body.appendChild(link);
+
+                link.click();
+
+                link.remove();
+
+
+                status.innerHTML =
+                    "✓ VCF generated successfully.<br>" +
+                    "Image is embedded directly inside the VCF as Base64.";
+
+                setTimeout(function () {
+                    URL.revokeObjectURL(url);
+                }, 10000);
+
+            }
+            catch (error) {
+
+                status.innerHTML =
+                    "Base64 conversion error: " +
+                    error.message;
+            }
+
+        };
+
+
+        reader.onerror = function () {
+
+            status.innerHTML =
+                "Could not read image.";
+        };
+
+
+        reader.readAsDataURL(blob);
+
+    }
+    catch (error) {
+
+        status.innerHTML =
+            "<strong>Could not download image.</strong><br><br>" +
+            error.message +
+            "<br><br>" +
+            "This is usually caused by the image server's CORS policy.";
+    }
+}
+
+</script>
+
+</body>
+</html>
