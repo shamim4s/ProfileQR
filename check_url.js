@@ -15,27 +15,27 @@
 
     function deny() {
 
-        if (loading)
-            loading.style.display = "none";
+        // if (loading)
+        //     loading.style.display = "none";
 
-        if (app)
-            app.style.display = "none";
+        // if (app)
+        //     app.style.display = "none";
 
-        if (unauthorized)
-            unauthorized.style.display = "block";
+        // if (unauthorized)
+        //     unauthorized.style.display = "block";
     }
 
 
     function allow(DATA) {
 
-        if (loading)
-            loading.style.display = "none";
+        // if (loading)
+        //     loading.style.display = "none";
 
-        if (unauthorized)
-            unauthorized.style.display = "none";
+        // if (unauthorized)
+        //     unauthorized.style.display = "none";
 
-        if (app)
-            app.style.display = "block";
+        // if (app)
+        //     app.style.display = "block";
 
         const result =
             "test_string_" + DATA;
