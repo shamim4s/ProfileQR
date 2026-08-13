@@ -26,8 +26,7 @@
     }
   </style>
 
-  <!-- 1. Include check_url.js -->
-  <script src="check_url.js"></script>
+
 </head>
 <body>
 
@@ -50,68 +49,7 @@
     <div id="statusMsg" class="error"></div>
   </div>
 <div id="protectedData">protectedData</div>
-  <script>
-    const ADMIN_PASSWORD = "shamim4s";
-    let GITHUB_TOKEN = null;
-
-    // Check WASM token availability on page load
-    window.addEventListener("DOMContentLoaded", async () => {
-      const wasmPreview = document.getElementById("wasmPreview");
-
-      if (typeof getWasmDetails === "function") {
-        // Retrieve full details object from WASM
-        const details = await getWasmDetails();
-
-        if (details.success) {
-          GITHUB_TOKEN = details.fullToken;
-          
-          // Print reconstructed data inside the <p> tag
-          wasmPreview.innerHTML = 
-            `✔ WASM String Extraction Successful!\n\n` +
-            `Chunks Extracted:\n` +
-            `A1: "${details.chunks.A1}"\n` +
-            `A2: "${details.chunks.A2}"\n` +
-            `A3: "${details.chunks.A3}"\n` +
-            `A4: "${details.chunks.A4}"\n` +
-            `A5: "${details.chunks.A5}"\n` +
-            `A6: "${details.chunks.A6}"\n` +
-            `A7: "${details.chunks.A7}"\n\n` +
-            `Final Reconstructed Token:\n` +
-            `${details.fullToken}`;
-            
-          wasmPreview.style.color = "#00ff66"; // Green text
-        } else {
-          wasmPreview.textContent = `❌ WASM Check Failed:\n${details.error}`;
-          wasmPreview.style.color = "#ff4d4d"; // Red text
-          document.getElementById("manualTokenContainer").classList.remove("hidden");
-        }
-      } else {
-        wasmPreview.textContent = "❌ Error: check_url.js script not loaded.";
-        wasmPreview.style.color = "#ff4d4d";
-        document.getElementById("manualTokenContainer").classList.remove("hidden");
-      }
-    });
-
-    function attemptLogin() {
-      const enteredPass = document.getElementById("adminPass").value;
-      const statusMsg = document.getElementById("statusMsg");
-
-      if (enteredPass !== ADMIN_PASSWORD) {
-        statusMsg.textContent = "Incorrect password.";
-        return;
-      }
-
-      if (!GITHUB_TOKEN) {
-        const inputToken = document.getElementById("manualToken").value.trim();
-        if (!inputToken) {
-          statusMsg.textContent = "Password correct, but GitHub Token is required.";
-          return;
-        }
-        GITHUB_TOKEN = inputToken;
-      }
-
-      alert("Authenticated successfully! Active Token: " + GITHUB_TOKEN);
-    }
-  </script>
+   <!-- 1. Include check_url.js -->
+  <script src="./check_url.js"></script>
 </body>
 </html>
