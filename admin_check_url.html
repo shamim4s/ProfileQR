@@ -10,6 +10,7 @@
     input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
     button { background: #0066cc; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 4px; cursor: pointer; }
     .error { color: red; margin-top: 10px; }
+    .test-box { background: #f0f4f8; border: 1px dashed #0066cc; padding: 10px; margin: 10px 0; font-family: monospace; word-break: break-all; }
   </style>
 
   <!-- 1. Include check_url.js -->
@@ -23,6 +24,12 @@
   <div id="loginForm" class="card">
     <label for="adminPass">Enter Admin Password:</label>
     <input type="password" id="adminPass" placeholder="Password">
+
+    <!-- WASM TOKEN TEST DISPLAY -->
+    <p class="test-box">
+      <strong>WASM Token Found:</strong> 
+      <span id="wasmPreview">Checking WASM...</span>
+    </p>
 
     <div id="manualTokenContainer" class="hidden">
       <label for="manualToken">GitHub Token (WASM Token Not Found):</label>
@@ -46,12 +53,22 @@
 
     // Check WASM token availability on page load
     window.addEventListener("DOMContentLoaded", async () => {
+      const wasmPreview = document.getElementById("wasmPreview");
+
       if (typeof getWasmToken === "function") {
         GITHUB_TOKEN = await getWasmToken();
       }
 
-      // If check_url.js failed or returned null, show manual token input field
-      if (!GITHUB_TOKEN) {
+      if (GITHUB_TOKEN) {
+        // Display what was retrieved from WASM
+        wasmPreview.textContent = GITHUB_TOKEN;
+        wasmPreview.style.color = "green";
+      } else {
+        // If WASM failed or file was missing
+        wasmPreview.textContent = "None (WASM failed or missing)";
+        wasmPreview.style.color = "red";
+        
+        // Show manual token input field fallback
         document.getElementById("manualTokenContainer").classList.remove("hidden");
       }
     });
@@ -81,14 +98,11 @@
       statusMsg.textContent = "";
       document.getElementById("loginForm").classList.add("hidden");
       document.getElementById("adminPanel").classList.remove("hidden");
-      
-      console.log("Authenticated! Active Token is active in memory.");
     }
 
-    // Example function using the loaded GITHUB_TOKEN
+    // Example action using GITHUB_TOKEN
     async function performAdminTask() {
-      alert("Performing admin action with token: " + GITHUB_TOKEN.substring(0, 7) + "...");
-      // Add your GitHub API fetch() calls here using GITHUB_TOKEN
+      alert("Performing admin action with token: " + GITHUB_TOKEN.substring(0, 10) + "...");
     }
   </script>
 </body>
