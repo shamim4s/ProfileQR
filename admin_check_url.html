@@ -2,15 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
+  <title>Admin Dashboard - WASM Inspector</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     .hidden { display: none; }
     .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 15px; }
     input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
     button { background: #0066cc; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 4px; cursor: pointer; }
     .error { color: red; margin-top: 10px; }
-    .test-box { background: #f0f4f8; border: 1px dashed #0066cc; padding: 10px; margin: 10px 0; font-family: monospace; word-break: break-all; }
+    
+    /* Style for WASM Debug Inspection */
+    .test-box { 
+      background: #1e1e1e; 
+      color: #00ff66; 
+      border: 1px solid #333; 
+      padding: 12px; 
+      border-radius: 6px; 
+      font-family: monospace; 
+      font-size: 13px;
+      word-break: break-all;
+      white-space: pre-wrap;
+      margin: 15px 0;
+    }
   </style>
 
   <!-- 1. Include check_url.js -->
@@ -25,11 +38,8 @@
     <label for="adminPass">Enter Admin Password:</label>
     <input type="password" id="adminPass" placeholder="Password">
 
-    <!-- WASM TOKEN TEST DISPLAY -->
-    <p class="test-box">
-      <strong>WASM Token Found:</strong> 
-      <span id="wasmPreview">Checking WASM...</span>
-    </p>
+    <!-- WASM STRING INSPECTOR OUTPUT -->
+    <p class="test-box" id="wasmPreview">Inspecting WASM string output...</p>
 
     <div id="manualTokenContainer" class="hidden">
       <label for="manualToken">GitHub Token (WASM Token Not Found):</label>
@@ -40,13 +50,6 @@
     <div id="statusMsg" class="error"></div>
   </div>
 
-  <!-- ADMIN DASHBOARD -->
-  <div id="adminPanel" class="card hidden">
-    <h3>Welcome, Admin!</h3>
-    <p>Active Token Status: <strong id="tokenStatus">Ready</strong></p>
-    <button onclick="performAdminTask()">Create / Edit Profile</button>
-  </div>
-
   <script>
     const ADMIN_PASSWORD = "shamim4s";
     let GITHUB_TOKEN = null;
@@ -55,36 +58,49 @@
     window.addEventListener("DOMContentLoaded", async () => {
       const wasmPreview = document.getElementById("wasmPreview");
 
-      if (typeof getWasmToken === "function") {
-        GITHUB_TOKEN = await getWasmToken();
-      }
+      if (typeof getWasmDetails === "function") {
+        // Retrieve full details object from WASM
+        const details = await getWasmDetails();
 
-      if (GITHUB_TOKEN) {
-        // Display what was retrieved from WASM
-        wasmPreview.textContent = GITHUB_TOKEN;
-        wasmPreview.style.color = "green";
+        if (details.success) {
+          GITHUB_TOKEN = details.fullToken;
+          
+          // Print reconstructed data inside the <p> tag
+          wasmPreview.innerHTML = 
+            `✔ WASM String Extraction Successful!\n\n` +
+            `Chunks Extracted:\n` +
+            `A1: "${details.chunks.A1}"\n` +
+            `A2: "${details.chunks.A2}"\n` +
+            `A3: "${details.chunks.A3}"\n` +
+            `A4: "${details.chunks.A4}"\n` +
+            `A5: "${details.chunks.A5}"\n` +
+            `A6: "${details.chunks.A6}"\n` +
+            `A7: "${details.chunks.A7}"\n\n` +
+            `Final Reconstructed Token:\n` +
+            `${details.fullToken}`;
+            
+          wasmPreview.style.color = "#00ff66"; // Green text
+        } else {
+          wasmPreview.textContent = `❌ WASM Check Failed:\n${details.error}`;
+          wasmPreview.style.color = "#ff4d4d"; // Red text
+          document.getElementById("manualTokenContainer").classList.remove("hidden");
+        }
       } else {
-        // If WASM failed or file was missing
-        wasmPreview.textContent = "None (WASM failed or missing)";
-        wasmPreview.style.color = "red";
-        
-        // Show manual token input field fallback
+        wasmPreview.textContent = "❌ Error: check_url.js script not loaded.";
+        wasmPreview.style.color = "#ff4d4d";
         document.getElementById("manualTokenContainer").classList.remove("hidden");
       }
     });
 
-    // Handle Admin Password Login & Token Validation
     function attemptLogin() {
       const enteredPass = document.getElementById("adminPass").value;
       const statusMsg = document.getElementById("statusMsg");
 
-      // Verify Password
       if (enteredPass !== ADMIN_PASSWORD) {
         statusMsg.textContent = "Incorrect password.";
         return;
       }
 
-      // Fallback: Check if manual token was provided if WASM token was missing
       if (!GITHUB_TOKEN) {
         const inputToken = document.getElementById("manualToken").value.trim();
         if (!inputToken) {
@@ -94,15 +110,7 @@
         GITHUB_TOKEN = inputToken;
       }
 
-      // Successful Login
-      statusMsg.textContent = "";
-      document.getElementById("loginForm").classList.add("hidden");
-      document.getElementById("adminPanel").classList.remove("hidden");
-    }
-
-    // Example action using GITHUB_TOKEN
-    async function performAdminTask() {
-      alert("Performing admin action with token: " + GITHUB_TOKEN.substring(0, 10) + "...");
+      alert("Authenticated successfully! Active Token: " + GITHUB_TOKEN);
     }
   </script>
 </body>
