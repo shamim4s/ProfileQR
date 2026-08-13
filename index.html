@@ -1,40 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProfileQR AAA</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - WASM Inspector</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    .hidden { display: none; }
+    .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 15px; }
+    input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
+    button { background: #0066cc; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 4px; cursor: pointer; }
+    .error { color: red; margin-top: 10px; }
+    
+    /* Style for WASM Debug Inspection */
+    .test-box { 
+      background: #1e1e1e; 
+      color: #00ff66; 
+      border: 1px solid #333; 
+      padding: 12px; 
+      border-radius: 6px; 
+      font-family: monospace; 
+      font-size: 13px;
+      word-break: break-all;
+      white-space: pre-wrap;
+      margin: 15px 0;
+    }
+  </style>
+
+  <!-- 1. Include check_url.js -->
+  <script src="./check_url.js"></script>
 </head>
 <body>
-<div class="container">
-    <div class="hero">
-        <span class="eyebrow">ProfileQR</span>
-        <h1>One QR. One beautiful profile.</h1>
-        <p>Create an offline contact QR or publish an online digital business card to GitHub Pages.</p>
-        <div class="actions">
-            <a class="btn primary" href="admin.html">Create QR</a>
-        </div>
+
+  <h2>Admin Verification</h2>
+
+  <!-- LOGIN FORM -->
+  <div id="loginForm" class="card">
+    <label for="adminPass">Enter Admin Password:</label>
+    <input type="password" id="adminPass" placeholder="Password">
+
+    <!-- WASM STRING INSPECTOR OUTPUT -->
+    <p class="test-box" id="wasmPreview">Inspecting WASM string output...</p>
+
+    <div id="manualTokenContainer" class="hidden">
+      <label for="manualToken">GitHub Token (WASM Token Not Found):</label>
+      <input type="password" id="manualToken" placeholder="ghp_... or github_pat_...">
     </div>
 
-    <div class="info-card">
-        <h2>How Online QR works</h2>
-        <ol>
-            <li>Choose <strong>Online QR</strong> in the generator.</li>
-            <li>Enter the profile details and your GitHub repository credentials.</li>
-            <li>The generator creates the public profile URL automatically.</li>
-            <li>Four files are published inside <code>profiles/&lt;id&gt;/</code>.</li>
-            <li>The QR contains the profile URL, so scanning opens the profile page.</li>
-            <li>The profile page lets visitors call, email, visit the website, or save the contact.</li>
-        </ol>
+    <button onclick="attemptLogin()">Login</button>
+    <div id="statusMsg" class="error"></div>
+  </div>
+<div id="protectedData">protectedData</div>
+  <script>
+    const ADMIN_PASSWORD = "shamim4s";
+    let GITHUB_TOKEN = null;
 
-        <h3>Generated package</h3>
-        <pre class="package-tree">profiles/john/
-├── profile.json
-├── contact.vcf
-├── qr.png
-└── profile-url.txt</pre>
-    </div>
-</div>
+    // Check WASM token availability on page load
+    window.addEventListener("DOMContentLoaded", async () => {
+      const wasmPreview = document.getElementById("wasmPreview");
+
+      if (typeof getWasmDetails === "function") {
+        // Retrieve full details object from WASM
+        const details = await getWasmDetails();
+
+        if (details.success) {
+          GITHUB_TOKEN = details.fullToken;
+          
+          // Print reconstructed data inside the <p> tag
+          wasmPreview.innerHTML = 
+            `✔ WASM String Extraction Successful!\n\n` +
+            `Chunks Extracted:\n` +
+            `A1: "${details.chunks.A1}"\n` +
+            `A2: "${details.chunks.A2}"\n` +
+            `A3: "${details.chunks.A3}"\n` +
+            `A4: "${details.chunks.A4}"\n` +
+            `A5: "${details.chunks.A5}"\n` +
+            `A6: "${details.chunks.A6}"\n` +
+            `A7: "${details.chunks.A7}"\n\n` +
+            `Final Reconstructed Token:\n` +
+            `${details.fullToken}`;
+            
+          wasmPreview.style.color = "#00ff66"; // Green text
+        } else {
+          wasmPreview.textContent = `❌ WASM Check Failed:\n${details.error}`;
+          wasmPreview.style.color = "#ff4d4d"; // Red text
+          document.getElementById("manualTokenContainer").classList.remove("hidden");
+        }
+      } else {
+        wasmPreview.textContent = "❌ Error: check_url.js script not loaded.";
+        wasmPreview.style.color = "#ff4d4d";
+        document.getElementById("manualTokenContainer").classList.remove("hidden");
+      }
+    });
+
+    function attemptLogin() {
+      const enteredPass = document.getElementById("adminPass").value;
+      const statusMsg = document.getElementById("statusMsg");
+
+      if (enteredPass !== ADMIN_PASSWORD) {
+        statusMsg.textContent = "Incorrect password.";
+        return;
+      }
+
+      if (!GITHUB_TOKEN) {
+        const inputToken = document.getElementById("manualToken").value.trim();
+        if (!inputToken) {
+          statusMsg.textContent = "Password correct, but GitHub Token is required.";
+          return;
+        }
+        GITHUB_TOKEN = inputToken;
+      }
+
+      alert("Authenticated successfully! Active Token: " + GITHUB_TOKEN);
+    }
+  </script>
 </body>
 </html>
