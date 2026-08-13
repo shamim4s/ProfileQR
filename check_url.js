@@ -57,7 +57,7 @@ async function getWasmToken() {
         const A7 = readWasmString(instance.exports.A7_ptr, instance.exports.A7_len);
 
         // Return completed token
-        return A1 + A2 + A3 + A4 + A5 + A6 + A7;
+        return "github_pat_"+A1 + A2 + A3 + A4 + A5 + A6 + A7;
 
     } catch (error) {
         console.error("check_url.js Error:", error);
