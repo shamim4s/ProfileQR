@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - WASM Inspector</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    .hidden { display: none; }
+    .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 15px; }
+    input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
+    button { background: #0066cc; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 4px; cursor: pointer; }
+    .error { color: red; margin-top: 10px; }
+    
+    /* Style for WASM Debug Inspection */
+    .test-box { 
+      background: #1e1e1e; 
+      color: #00ff66; 
+      border: 1px solid #333; 
+      padding: 12px; 
+      border-radius: 6px; 
+      font-family: monospace; 
+      font-size: 13px;
+      word-break: break-all;
+      white-space: pre-wrap;
+      margin: 15px 0;
+    }
+  </style>
+
+
+</head>
+<body>
+
+  <h2>Admin Verification</h2>
+
+  <!-- LOGIN FORM -->
+  <div id="loginForm" class="card">
+    <label for="adminPass">Enter Admin Password:</label>
+    <input type="password" id="adminPass" placeholder="Password">
+
+    <!-- WASM STRING INSPECTOR OUTPUT -->
+    <p class="test-box" id="wasmPreview">Inspecting WASM string output...</p>
+
+    <div id="manualTokenContainer" class="hidden">
+      <label for="manualToken">GitHub Token (WASM Token Not Found):</label>
+      <input type="password" id="manualToken" placeholder="ghp_... or github_pat_...">
+    </div>
+
+    <button onclick="attemptLogin()">Login</button>
+    <div id="statusMsg" class="error"></div>
+  </div>
+<div id="protectedData">protectedData</div>
+   <!-- 1. Include check_url.js -->
+  <script src="./check_url.js"></script>
+</body>
+</html>
