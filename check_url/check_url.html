@@ -36,23 +36,25 @@
 
 <body>
 
-    <div id="loading">
-        Checking authorization...
-    </div>
+<div id="loading">
+    Checking authorization...
+</div>
 
-    <div id="app">
-        <h1>ProfileQR</h1>
-        <p>Application loaded successfully.</p>
+<div id="unauthorized" style="display:none;">
+    <h1>Unauthorized URL</h1>
+</div>
 
-        <!-- Put your actual application here -->
-    </div>
+<div id="app" style="display:none;">
 
-    <div id="unauthorized">
-        <h1>Unauthorized URL</h1>
-        <p>This application is not authorized to run from this URL.</p>
-    </div>
+    <h1>ProfileQR</h1>
 
-    <script src="./check_url.js"></script>
+    <p>Protected data:</p>
+
+    <div id="protectedData"></div>
+
+</div>
+
+<script src="./check_url.js"></script>
 
 </body>
 </html>
