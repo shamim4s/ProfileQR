@@ -199,7 +199,7 @@
         // URL MATCH
         // =====================================================
 
-        if (result === 1) {
+        if (result === 0) {
 
             /*
              * Get protected data location

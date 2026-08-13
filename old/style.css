@@ -336,6 +336,10 @@ a { color: inherit; }
 
 .profile h1 { margin: 20px 0 5px; }
 .profile .title { color: var(--muted); }
+.profile .company { color: var(--text); font-weight: 700; margin-top: 4px; }
+.address-item { margin-bottom: 12px; line-height: 1.6; }
+.address-item:last-child { margin-bottom: 0; }
+.address-item strong { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 3px; }
 .profile .about {
     color: #4b5563;
     line-height: 1.7;
